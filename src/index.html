@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 
+      Judul ini bisa diganti secara dinamis oleh Webpack jika Anda mengaturnya.
+      <title><%= htmlWebpackPlugin.options.title %></title> 
+    -->
+    <title>Aplikasi Tiket Guci</title>
+
+    <!-- 
+      Anda TIDAK PERLU menambahkan <link rel="stylesheet" ...> di sini.
+      Webpack akan menyuntikkan style dari 'main.css' secara otomatis ke dalam <head>
+      menggunakan 'style-loader'.
+    -->
+</head>
+<body>
+    <!-- 
+      Ini adalah elemen paling penting.
+      File 'index.js' Anda akan mencari elemen dengan id="app"
+      dan akan merender semua komponen (WelcomePage, Dashboard, dll.) di dalamnya.
+    -->
+    <main id="app"></main>
+
+    <!-- 
+      Anda juga TIDAK PERLU menambahkan <script src="bundle.js"></script> di sini.
+      'HtmlWebpackPlugin' akan secara otomatis menambahkannya sebelum tag </body> ditutup.
+    -->
+</body>
+</html>
