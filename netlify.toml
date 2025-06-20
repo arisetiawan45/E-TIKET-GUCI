@@ -6,7 +6,11 @@
   # Perintah untuk membangun frontend Anda
   command = "npm run build"
 
+[functions]
+  directory = "netlify/functions"
+  
 [dev]
   command = "npm run start"
   targetPort = 8080
   publish = "dist"
+  
