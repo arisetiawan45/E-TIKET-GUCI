@@ -71,6 +71,33 @@ document.addEventListener('DOMContentLoaded', () => {
         app.appendChild(tombolTransaksi);
         app.appendChild(tombolAdmin);
       };
+      // --- Menangani Event dari Netlify Identity ---
+
+// Event ini dipanggil SETELAH pengguna berhasil logout
+netlifyIdentity.on('logout', () => {
+  console.log('Pengguna logout, kembali ke halaman selamat datang.');
+  navigateToWelcome(); // Kembali ke halaman selamat datang
+});
+
+// Event ini dipanggil SETELAH pengguna berhasil login
+netlifyIdentity.on('login', (user) => {
+  console.log('Pengguna login, mengarahkan ke dasbor.');
+  navigateToDashboard();
+});
+
+// Event 'init' dijalankan saat pustaka selesai dimuat
+// Ini berguna untuk memeriksa apakah pengguna sudah login dari sesi sebelumnya
+netlifyIdentity.on('init', (user) => {
+  if (user) {
+    // Jika ada pengguna (sudah login), langsung ke dasbor
+    console.log('Pengguna sudah login dari sesi sebelumnya.');
+    navigateToDashboard();
+  } else {
+    // Jika tidak ada pengguna, tampilkan halaman selamat datang
+    console.log('Tidak ada sesi login aktif, tampilkan halaman selamat datang.');
+    navigateToWelcome();
+  }
+});
        
   
     app.appendChild(WelcomePage(showDashboard));

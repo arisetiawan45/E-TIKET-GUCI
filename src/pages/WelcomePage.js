@@ -9,10 +9,24 @@ export function WelcomePage(navigateToDashboard) {
     `;
   
     // Event untuk tombol "Masuk"
-    div.querySelector('#masukBtn').addEventListener('click', () => {
-      navigateToDashboard();
-    });
+ div.querySelector('#masukBtn').addEventListener('click', () => {
+    // Membuka widget Netlify Identity pada tab login
+    netlifyIdentity.open('login');
+  });
+
+  // Fungsi navigateToDashboard() sekarang dipanggil SETELAH login berhasil
+  // Kita menambahkan listener untuk event 'login' dari Netlify Identity
+  netlifyIdentity.on('login', (user) => {
+    console.log('Pengguna berhasil login:', user);
+    // Setelah login sukses, baru arahkan ke dasbor
+    navigateToDashboard();
+  });
   
-    return div;
-  }
-  
+  // Kita juga bisa menangani event 'logout' jika diperlukan
+  netlifyIdentity.on('logout', () => {
+    console.log('Pengguna telah logout.');
+
+  });
+
+  return div;
+}
