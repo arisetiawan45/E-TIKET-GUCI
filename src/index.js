@@ -71,6 +71,18 @@ document.addEventListener('DOMContentLoaded', () => {
         app.appendChild(tombolTransaksi);
         app.appendChild(tombolAdmin);
       };
+
+function navigateToWelcome() {
+  // Bersihkan halaman dan render WelcomePage
+  app.innerHTML = '';
+  app.appendChild(WelcomePage(navigateToDashboard)); // WelcomePage butuh fungsi navigateToDashboard
+}
+
+function navigateToDashboard() {
+  // Bersihkan halaman dan render DashboardPage
+  app.innerHTML = '';
+  app.appendChild(DashboardPage());
+}
       // --- Menangani Event dari Netlify Identity ---
 
 // Event ini dipanggil SETELAH pengguna berhasil logout
