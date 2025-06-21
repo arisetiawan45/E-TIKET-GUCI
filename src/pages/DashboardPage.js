@@ -1,6 +1,5 @@
 // pages/DashboardPage.js
 import { Pemesanan } from '../components/Pemesanan';
-// 1. Pastikan Transaksi sudah diimpor
 import { Transaksi } from '../components/Transaksi';
 import { AdminPage } from './AdminPage';
 import { PimpinanPage } from './PimpinanPage';
@@ -25,6 +24,7 @@ export function DashboardPage() {
   const nav = div.querySelector('#main-nav');
   const contentArea = div.querySelector('#content');
 
+  // Fungsi ini bertugas mengganti konten di <main>
   const renderContent = (pageComponent) => {
     contentArea.innerHTML = '';
     contentArea.appendChild(pageComponent);
@@ -32,26 +32,24 @@ export function DashboardPage() {
   
   // --- Tombol Navigasi ---
 
-  // Tombol Pemesanan
+  // Tombol untuk 'Pesan Tiket'
   const tombolPemesanan = document.createElement('button');
   tombolPemesanan.textContent = 'Pesan Tiket';
+  // Saat diklik, panggil renderContent untuk menampilkan halaman Pemesanan
   tombolPemesanan.onclick = () => {
     renderContent(Pemesanan(renderContent));
   };
   nav.appendChild(tombolPemesanan);
 
-  // --- TAMBAHAN BARU DI SINI ---
-  // 2. Buat tombol "Lihat Transaksi"
+  // Tombol untuk 'Lihat Transaksi'
   const tombolTransaksi = document.createElement('button');
   tombolTransaksi.textContent = 'Lihat Transaksi';
   tombolTransaksi.style.marginLeft = '10px';
-  // 3. Atur onclick untuk merender komponen Transaksi
+  // Saat diklik, panggil renderContent untuk menampilkan halaman Transaksi
   tombolTransaksi.onclick = () => {
     renderContent(Transaksi());
   };
-  // 4. Tambahkan tombol ke navigasi
   nav.appendChild(tombolTransaksi);
-  // --- AKHIR TAMBAHAN ---
 
   // Tombol Admin (berdasarkan peran)
   if (userRoles.includes('admin')) {
@@ -76,7 +74,7 @@ export function DashboardPage() {
     netlifyIdentity.logout();
   });
   
-  // Tampilkan halaman default saat dasbor pertama kali dimuat
+  // Menampilkan halaman Pemesanan secara default saat Dasbor pertama kali dimuat
   renderContent(Pemesanan(renderContent));
 
   return div;
