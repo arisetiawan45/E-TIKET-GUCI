@@ -14,19 +14,7 @@ export function WelcomePage(navigateToDashboard) {
     netlifyIdentity.open('login');
   });
 
-  // Fungsi navigateToDashboard() sekarang dipanggil SETELAH login berhasil
-  // Kita menambahkan listener untuk event 'login' dari Netlify Identity
-  netlifyIdentity.on('login', (user) => {
-    console.log('Pengguna berhasil login:', user);
-    // Setelah login sukses, baru arahkan ke dasbor
-    navigateToDashboard();
-  });
-  
-  // Kita juga bisa menangani event 'logout' jika diperlukan
-  netlifyIdentity.on('logout', () => {
-    console.log('Pengguna telah logout.');
 
-  });
 
   return div;
 }
