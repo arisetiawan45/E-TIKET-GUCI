@@ -4,7 +4,7 @@ export const handler = async (event) => {
   // 1. Pastikan request datang menggunakan metode POST
   if (event.httpMethod !== 'POST') {
     return {
-      statusCode: 405, // Method Not Allowed
+      statusCode: 405,
       body: JSON.stringify({ error: 'Hanya metode POST yang diizinkan' }),
     };
   }
@@ -15,38 +15,35 @@ export const handler = async (event) => {
     // 2. Ambil dan parse data dari body request
     const data = JSON.parse(event.body);
 
-    // Destructuring data dari frontend
+    // Ambil semua data dari frontend, termasuk 'jenis' meskipun tidak akan dipakai
     const { tanggal, jenis, jumlah, destinasi, paket } = data;
 
-    // 3. Validasi data yang masuk
-    // Memastikan field inti tidak kosong
-    if (!tanggal || !jenis || !jumlah) {
+    // 3. Validasi data yang masuk (jumlah dan tanggal tetap penting)
+    if (!tanggal || !jumlah) {
         return {
-            statusCode: 400, // Bad Request
-            body: JSON.stringify({ error: 'Data tidak lengkap. Tanggal, jenis, dan jumlah tiket wajib diisi.' }),
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Data tidak lengkap. Tanggal dan jumlah tiket wajib diisi.' }),
         };
     }
     
     // 4. Buat koneksi ke database Neon
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-    // 5. Siapkan query SQL untuk memasukkan data
-    // Nama kolom di sini harus sama persis dengan yang ada di tabel database Anda
+    // 5. PERUBAHAN DI SINI: Query SQL diperbarui
+    // Kolom 'jenis_tiket' telah dihapus dari query INSERT.
     const sqlQuery = `
-      INSERT INTO pemesanan (tanggal, jenis_tiket, jumlah_tiket, destinasi_wisata, paket_wisata) 
-      VALUES ($1, $2, $3, $4, $5) 
+      INSERT INTO pemesanan (tanggal, jumlah_tiket, destinasi_wisata) 
+      VALUES ($1, $2, $3) 
       RETURNING id;
     `;
 
-    // 6. Siapkan array 'values' sesuai urutan di query
-    // Nilai untuk 'destinasi' dan 'paket' bisa berupa string atau null,
-    // yang akan diterima dengan baik oleh database.
+    // 6. PERUBAHAN DI SINI: Array 'values' disesuaikan
+    // Variabel 'jenis' tidak lagi dimasukkan ke dalam array ini.
+    // Urutannya sekarang harus cocok dengan query baru di atas.
     const values = [
-      tanggal, 
-      jenis, 
-      parseInt(jumlah, 10), 
-      destinasi, 
-      paket
+      tanggal,                  // $1
+      parseInt(jumlah, 10),     // $2
+      destinasi,                // $3                
     ];
 
     // 7. Eksekusi query
@@ -65,16 +62,14 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    // Tangani jika terjadi error di dalam blok try
     console.error('!!! ERROR DI DALAM FUNGSI createPemesanan !!!:', error);
     
-    // Pastikan koneksi ditutup bahkan saat ada error
     if (pool) {
       await pool.end();
     }
 
     return {
-      statusCode: 500, // Internal Server Error
+      statusCode: 500,
       body: JSON.stringify({ error: 'Terjadi kesalahan internal pada server saat menyimpan pesanan.' }),
     };
   }
