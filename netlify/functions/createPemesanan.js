@@ -15,10 +15,10 @@ export const handler = async (event) => {
     // 2. Ambil dan parse data dari body request
     const data = JSON.parse(event.body);
 
-    // Ambil semua data dari frontend, termasuk 'jenis' meskipun tidak akan dipakai
-    const { tanggal, jenis, jumlah, destinasi, paket } = data;
+    // Ambil data yang relevan dari frontend
+    const { tanggal, jumlah, destinasi, paket } = data;
 
-    // 3. Validasi data yang masuk (jumlah dan tanggal tetap penting)
+    // 3. Validasi data yang masuk
     if (!tanggal || !jumlah) {
         return {
             statusCode: 400,
@@ -29,21 +29,20 @@ export const handler = async (event) => {
     // 4. Buat koneksi ke database Neon
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-    // 5. PERUBAHAN DI SINI: Query SQL diperbarui
-    // Kolom 'jenis_tiket' telah dihapus dari query INSERT.
+    // 5. Query SQL disesuaikan dengan nama kolom di tabel Anda
+    //    Perhatikan bahwa kita tidak memasukkan 'id_paket' dan 'id_pembayaran'
+    //    dengan asumsi kolom tersebut boleh NULL untuk saat ini.
     const sqlQuery = `
       INSERT INTO pemesanan (tanggal, jumlah_tiket, destinasi_wisata) 
       VALUES ($1, $2, $3) 
-      RETURNING id;
+      RETURNING id_pemesanan;
     `;
 
-    // 6. PERUBAHAN DI SINI: Array 'values' disesuaikan
-    // Variabel 'jenis' tidak lagi dimasukkan ke dalam array ini.
-    // Urutannya sekarang harus cocok dengan query baru di atas.
+    // 6. Array 'values' disesuaikan dengan query di atas
     const values = [
       tanggal,                  // $1
       parseInt(jumlah, 10),     // $2
-      destinasi,                // $3                
+      destinasi                 // $3
     ];
 
     // 7. Eksekusi query
@@ -53,11 +52,12 @@ export const handler = async (event) => {
     await pool.end();
 
     // 9. Kirim respons sukses kembali ke frontend
+    //    Ambil nilai dari 'id_pemesanan' sesuai hasil RETURNING
     return {
       statusCode: 201, // Created
       body: JSON.stringify({ 
         message: 'Pemesanan berhasil dibuat!', 
-        id: result.rows[0].id 
+        id: result.rows[0].id_pemesanan
       }),
     };
 
