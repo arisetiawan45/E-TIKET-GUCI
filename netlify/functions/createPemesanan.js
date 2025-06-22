@@ -1,7 +1,9 @@
 import { Pool } from '@neondatabase/serverless';
 
 export const handler = async (event) => {
-  // 1. Pastikan request datang menggunakan metode POST
+  // Log untuk menandakan fungsi dimulai
+  console.log('Function createPemesanan dipanggil.');
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -12,49 +14,49 @@ export const handler = async (event) => {
   let pool;
 
   try {
-    // 2. Ambil dan parse data dari body request
     const data = JSON.parse(event.body);
+    // Log data yang diterima dari frontend agar kita bisa memeriksanya
+    console.log('Menerima data dari frontend:', JSON.stringify(data, null, 2));
 
-    // Ambil data yang relevan dari frontend
     const { tanggal, jumlah, destinasi, paket } = data;
-
-    // 3. Validasi data yang masuk
+    
     if (!tanggal || !jumlah) {
+        console.error('Validasi gagal: Tanggal atau jumlah tiket kosong.');
         return {
             statusCode: 400,
             body: JSON.stringify({ error: 'Data tidak lengkap. Tanggal dan jumlah tiket wajib diisi.' }),
         };
     }
-    
-    // 4. Buat koneksi ke database Neon
+
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-    // 5. Query SQL disesuaikan dengan nama kolom di tabel Anda
-    //    Perhatikan bahwa kita tidak memasukkan 'id_paket' dan 'id_pembayaran'
-    //    dengan asumsi kolom tersebut boleh NULL untuk saat ini.
+    // Query SQL disesuaikan untuk menyertakan SEMUA kolom yang mungkin
+    // Kita akan memberikan nilai NULL untuk id_paket dan id_pembayaran
     const sqlQuery = `
-      INSERT INTO pemesanan (tanggal, jumlah_tiket, destinasi_wisata) 
-      VALUES ($1, $2, $3) 
+      INSERT INTO pemesanan (tanggal, jumlah_tiket, destinasi_wisata, id_paket, id_pembayaran) 
+      VALUES ($1, $2, $3, $4, $5) 
       RETURNING id_pemesanan;
     `;
 
-    // 6. Array 'values' disesuaikan dengan query di atas
+    // Siapkan values. Untuk kolom yang belum ada datanya, kita isi dengan null.
     const values = [
-      tanggal,                  // $1
-      parseInt(jumlah, 10),     // $2
-      destinasi                 // $3
+      tanggal,                   // $1
+      parseInt(jumlah, 10),      // $2
+      destinasi,                 // $3
+      null,                      // $4 -> untuk id_paket
+      null                       // $5 -> untuk id_pembayaran
     ];
+    
+    console.log('Akan menjalankan query SQL:', sqlQuery);
+    console.log('Dengan values:', values);
 
-    // 7. Eksekusi query
     const result = await pool.query(sqlQuery, values);
     
-    // 8. Tutup koneksi database
     await pool.end();
+    console.log('Pemesanan berhasil, ID baru:', result.rows[0].id_pemesanan);
 
-    // 9. Kirim respons sukses kembali ke frontend
-    //    Ambil nilai dari 'id_pemesanan' sesuai hasil RETURNING
     return {
-      statusCode: 201, // Created
+      statusCode: 201,
       body: JSON.stringify({ 
         message: 'Pemesanan berhasil dibuat!', 
         id: result.rows[0].id_pemesanan
@@ -62,7 +64,8 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('!!! ERROR DI DALAM FUNGSI createPemesanan !!!:', error);
+    // Log error yang sebenarnya dan detail dari server
+    console.error('!!! TERJADI ERROR FATAL DI DALAM FUNGSI !!!:', error);
     
     if (pool) {
       await pool.end();
