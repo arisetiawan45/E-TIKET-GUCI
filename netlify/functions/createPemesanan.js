@@ -1,51 +1,63 @@
 import { Pool } from '@neondatabase/serverless';
 
 export const handler = async (event) => {
-  // Log bahwa fungsi dimulai
-  console.log('Function createPemesanan dipanggil.');
-
+  // 1. Pastikan request datang menggunakan metode POST
   if (event.httpMethod !== 'POST') {
     return {
-      statusCode: 405,
+      statusCode: 405, // Method Not Allowed
       body: JSON.stringify({ error: 'Hanya metode POST yang diizinkan' }),
     };
   }
 
-  let pool; // Definisikan pool di luar try-catch
+  let pool;
 
   try {
+    // 2. Ambil dan parse data dari body request
     const data = JSON.parse(event.body);
-    console.log('Menerima data dari frontend:', data);
 
-    const { nama, paket, jumlah, tanggal } = data;
-    
-    if (!nama || !paket || !jumlah || !tanggal) {
-        console.error('Validasi gagal: Data tidak lengkap.');
+    // Destructuring data dari frontend
+    const { tanggal, jenis, jumlah, destinasi, paket } = data;
+
+    // 3. Validasi data yang masuk
+    // Memastikan field inti tidak kosong
+    if (!tanggal || !jenis || !jumlah) {
         return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Semua field wajib diisi' }),
+            statusCode: 400, // Bad Request
+            body: JSON.stringify({ error: 'Data tidak lengkap. Tanggal, jenis, dan jumlah tiket wajib diisi.' }),
         };
     }
-
-    console.log('Menghubungkan ke database...');
+    
+    // 4. Buat koneksi ke database Neon
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+    // 5. Siapkan query SQL untuk memasukkan data
+    // Nama kolom di sini harus sama persis dengan yang ada di tabel database Anda
     const sqlQuery = `
-      INSERT INTO pemesanan (nama, paket_wisata, jumlah_tiket, tanggal_kunjungan) 
-      VALUES ($1, $2, $3, $4) 
+      INSERT INTO pemesanan (tanggal, jenis_tiket, jumlah_tiket, destinasi_wisata, paket_wisata) 
+      VALUES ($1, $2, $3, $4, $5) 
       RETURNING id;
     `;
-    const values = [nama, paket, parseInt(jumlah, 10), tanggal];
 
-    console.log('Menjalankan query SQL...');
+    // 6. Siapkan array 'values' sesuai urutan di query
+    // Nilai untuk 'destinasi' dan 'paket' bisa berupa string atau null,
+    // yang akan diterima dengan baik oleh database.
+    const values = [
+      tanggal, 
+      jenis, 
+      parseInt(jumlah, 10), 
+      destinasi, 
+      paket
+    ];
+
+    // 7. Eksekusi query
     const result = await pool.query(sqlQuery, values);
-    console.log('Query berhasil, ID baru:', result.rows[0].id);
     
+    // 8. Tutup koneksi database
     await pool.end();
-    console.log('Koneksi database ditutup.');
 
+    // 9. Kirim respons sukses kembali ke frontend
     return {
-      statusCode: 201,
+      statusCode: 201, // Created
       body: JSON.stringify({ 
         message: 'Pemesanan berhasil dibuat!', 
         id: result.rows[0].id 
@@ -53,18 +65,17 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    // Ini adalah log error yang paling penting!
-    console.error('!!! TERJADI ERROR DI DALAM FUNGSI !!!:', error);
+    // Tangani jika terjadi error di dalam blok try
+    console.error('!!! ERROR DI DALAM FUNGSI createPemesanan !!!:', error);
     
     // Pastikan koneksi ditutup bahkan saat ada error
     if (pool) {
       await pool.end();
-      console.log('Koneksi database ditutup setelah terjadi error.');
     }
 
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Gagal menyimpan pesanan ke database' }),
+      statusCode: 500, // Internal Server Error
+      body: JSON.stringify({ error: 'Terjadi kesalahan internal pada server saat menyimpan pesanan.' }),
     };
   }
 };
