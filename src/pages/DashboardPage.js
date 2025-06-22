@@ -1,8 +1,8 @@
 // pages/DashboardPage.js
-import { Pemesanan } from '../components/Pemesanan';
-import { Transaksi } from '../components/Transaksi';
-import { AdminPage } from './AdminPage';
-import { PimpinanPage } from './PimpinanPage';
+import  Pemesanan  from '../components/Pemesanan';
+import  Transaksi  from '../components/Transaksi';
+import  AdminPage  from './AdminPage';
+import  PimpinanPage  from './PimpinanPage';
 
 export function DashboardPage() {
   const div = document.createElement('div');
