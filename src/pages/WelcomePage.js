@@ -1,4 +1,4 @@
-export function WelcomePage(navigateToDashboard) {
+export default function WelcomePage(navigateToDashboard) {
     const div = document.createElement('div');
     div.innerHTML = `
       <section style="padding: 20px; text-align: center;">

@@ -1,4 +1,4 @@
-export function Dashboard() {
+export default function Dashboard() {
     const user = netlifyIdentity.currentUser();
     const div = document.createElement('div');
     div.innerHTML = `

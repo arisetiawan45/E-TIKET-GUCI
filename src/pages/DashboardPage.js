@@ -4,7 +4,8 @@ import  Transaksi  from '../components/Transaksi';
 import  AdminPage  from './AdminPage';
 import  PimpinanPage  from './PimpinanPage';
 
-export function DashboardPage() {
+
+export default function DashboardPage() {
   const div = document.createElement('div');
   const user = netlifyIdentity.currentUser();
   const userRoles = user?.app_metadata?.roles || [];

@@ -1,10 +1,9 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin'); // Import plugin
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+// 1. Impor CopyPlugin
+const CopyPlugin = require('copy-webpack-plugin'); 
 
 module.exports = {
-  // Hapus 'mode' dari sini agar lebih fleksibel, biarkan dikontrol oleh skrip NPM
-  // mode: 'development' 
-
   entry: './src/index.js',
 
   output: {
@@ -13,32 +12,35 @@ module.exports = {
     clean: true,
   },
   
-  // Tambahkan devtool untuk debugging yang lebih baik
-  devtool: 'inline-source-map', // Pilihan bagus untuk development
+  devtool: 'inline-source-map',
 
   devServer: {
     static: './dist',
     port: 3000,
-    open: true, // Otomatis membuka browser
-    hot: true,  // Mengaktifkan Hot Module Replacement
+    open: true,
+    hot: true,
   },
 
-  // Tambahkan array 'plugins' untuk HtmlWebpackPlugin
   plugins: [
     new HtmlWebpackPlugin({
-      title: 'Webpack App', // Judul default untuk halaman HTML
-      template: './src/index.html' // Path ke file template HTML Anda
+      title: 'Aplikasi Tiket Guci',
+      template: './src/index.html' 
     }),
+    // 2. Tambahkan CopyPlugin di sini
+// SOLUSI: Gunakan path.resolve untuk memberikan path absolut yang jelas
+  new CopyPlugin({
+    patterns: [
+      { from: path.resolve(__dirname, './src/assets'), to: 'assets' }
+    ]
+  })
   ],
   
   module: {
     rules: [
-      // Loader untuk CSS (sudah ada)
       {
         test: /\.css$/i,
         use: ['style-loader', 'css-loader'],
       },
-      // Tambahkan loader untuk JavaScript menggunakan Babel
       {
         test: /\.m?js$/,
         exclude: /node_modules/,

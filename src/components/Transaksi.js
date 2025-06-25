@@ -1,47 +1,45 @@
-export function Transaksi() {
-    const div = document.createElement('div');
-    div.innerHTML = `
-      <section style="padding: 20px;">
-        <h2>Riwayat Transaksi Tiket</h2>
-        <table border="1" cellspacing="0" cellpadding="10" style="width: 100%; margin-top: 20px;">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama</th>
-              <th>Paket Wisata</th>
-              <th>Jumlah Tiket</th>
-              <th>Tanggal Kunjungan</th>
-              <th>Nota</th>
-            </tr>
-          </thead>
-          <tbody id="transaksiBody">
-          </tbody>
-        </table>
-      </section>
+export default function TransaksiPage(navigateToDashboard) {
+  const container = document.createElement("div");
+
+  const transaksi = JSON.parse(localStorage.getItem("transaksi") || "[]");
+
+  container.innerHTML = `
+    <h2>Data Transaksi</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>ID Transaksi</th>
+          <th>ID Pemesanan</th>
+          <th>Total Harga</th>
+          <th>Tanggal Kunjungan</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyTransaksi"></tbody>
+    </table>
+    <br>
+    <button id="btnKembali">Kembali ke Dashboard</button>
+  `;
+
+  const tbody = container.querySelector("#tbodyTransaksi");
+
+  transaksi.forEach((trx, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>TRX-${trx.id}</td>
+      <td>${index + 1}</td>
+      <td>Rp${trx.total}</td>
+      <td>${trx.tanggal}</td>
     `;
-  
-    const tbody = div.querySelector('#transaksiBody');
-    const transaksiData = JSON.parse(localStorage.getItem('transaksi')) || [];
-  
-    if (transaksiData.length === 0) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="6" style="text-align: center;">Belum ada transaksi</td>`;
-      tbody.appendChild(tr);
+    tbody.appendChild(tr);
+  });
+
+  container.querySelector("#btnKembali").addEventListener("click", () => {
+    if (navigateToDashboard) {
+      navigateToDashboard();
     } else {
-      transaksiData.forEach((trx, index) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${trx.nama}</td>
-          <td>${trx.paket}</td>
-          <td>${trx.jumlah}</td>
-          <td>${trx.tanggal}</td>
-          <td>TRX-${trx.id}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+      window.history.back(); // fallback
     }
-  
-    return div;
-  }
-  
+  });
+
+  return container;
+}

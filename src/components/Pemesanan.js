@@ -1,135 +1,187 @@
-export default function Pemesanan(onSubmitCallback) {
+// components/Pemesanan.js
+
+// Impor komponen Transaksi jika Anda ingin pindah halaman setelah submit
+import Transaksi from './Transaksi';
+
+export default function Pemesanan(renderContent, navigateToDashboard) {
   const div = document.createElement("div");
   div.className = "pemesanan-container";
 
-  const today = new Date().toISOString().split("T")[0];
-
+  // Tampilkan pesan loading awal
   div.innerHTML = `
     <h2>Form Pemesanan Tiket</h2>
-    <form id="formPemesanan">
-      <label>Tanggal Kunjungan:</label><br>
-      <input type="date" id="tanggal" name="tanggal" min="${today}" required><br><br>
-
-      <label>Jenis Tiket:</label><br>
-      <select name="jenis" id="jenisTiket" required>
-        <option value="biasa">Biasa (Per Destinasi)</option>
-        <option value="paket">Paket Terusan</option>
-      </select><br><br>
-
-      <div id="destinasiWrapper">
-        <label>Destinasi Wisata:</label><br>
-        <select name="destinasi" id="destinasiSelect">
-          <option value="Curug Guci">Curug Guci</option>
-          <option value="Pemandian Air Panas">Pemandian Air Panas</option>
-          <option value="Gunung Slamet">Gunung Slamet</option>
-        </select><br><br>
-      </div>
-
-      <div id="paketWrapper" style="display: none;">
-        <label>Pilih Paket Wisata:</label><br>
-        <select name="paket" id="paketSelect">
-          <option value="paket1">Paket 1 - Curug + Air Panas</option>
-          <option value="paket2">Paket 2 - Gunung + Air Panas</option>
-        </select><br><br>
-      </div>
-
-      <label>Jumlah Tiket:</label><br>
-      <input type="number" name="jumlah" min="1" required><br><br>
-
-      <button type="submit" id="btnSubmit">Lanjut Transaksi</button>
-    </form>
-    
-    <!-- Elemen untuk menampilkan pesan error -->
-    <div id="formMessage" style="margin-top: 15px; font-weight: bold; color: red;"></div>
-
-    <br>
-    <button id="btnKembaliDashboard">Kembali ke Dashboard</button>
+    <p id="loadingMessage">Memuat data destinasi dan paket...</p>
+    <form id="formPemesanan" style="display: none;"></form>
   `;
 
-  // --- Ambil Referensi Elemen ---
-  const form = div.querySelector("#formPemesanan");
-  const jenisTiket = div.querySelector("#jenisTiket");
-  const destinasiWrapper = div.querySelector("#destinasiWrapper");
-  const paketWrapper = div.querySelector("#paketWrapper");
-  const submitButton = div.querySelector("#btnSubmit");
-  const messageDiv = div.querySelector("#formMessage");
-
-  // --- Logika Tampilan Form ---
-  const toggleTicketType = () => {
-    const isPaket = jenisTiket.value === "paket";
-    paketWrapper.style.display = isPaket ? "block" : "none";
-    destinasiWrapper.style.display = isPaket ? "none" : "block";
-
-    // Membuat input opsional/wajib berdasarkan pilihan
-    div.querySelector("#paketSelect").required = isPaket;
-    div.querySelector("#destinasiSelect").required = !isPaket;
-  };
-
-  jenisTiket.addEventListener("change", toggleTicketType);
-  toggleTicketType(); // Inisialisasi tampilan saat komponen dimuat
-
-  // --- Logika Tombol Kembali ---
-  div.querySelector("#btnKembaliDashboard").addEventListener("click", () => {
-    location.hash = "#dashboard";
-  });
-
-  // --- Logika Submit Form (Sudah Disesuaikan) ---
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    // Memberi umpan balik ke pengguna
-    submitButton.disabled = true;
-    submitButton.textContent = "Memproses...";
-    messageDiv.textContent = "";
-
-    const isPaket = form.jenis.value === "paket";
-    
-    // 1. Kumpulkan data dari form
-    const data = {
-      tanggal: form.tanggal.value,
-      jenis: form.jenis.value,
-      // Jika paket, destinasi null. Jika biasa, paket null.
-      destinasi: !isPaket ? form.destinasi.value : null,
-      paket: isPaket ? form.paket.value : null,
-      jumlah: parseInt(form.jumlah.value),
-    };
-
+  // Gunakan IIFE (Immediately Invoked Function Expression) async untuk memuat data
+  (async () => {
     try {
-      // 2. Ganti localStorage dengan fetch ke Netlify Function
-      const response = await fetch('/.netlify/functions/createPemesanan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      // 3. Tangani respons dari server
+      // 1. Ambil data dari Netlify Function
+      const response = await fetch('/.netlify/functions/get-initial-data');
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Terjadi kesalahan pada server.');
+        throw new Error(errorData.error || 'Gagal memuat data dari server.');
+      }
+      const initialData = await response.json();
+
+      // Olah data yang diterima dari Neon DB (struktur lebih sederhana)
+      const destinasiList = initialData.destinasi;
+      const paketList = initialData.paket;
+      
+      const hargaList = {};
+      destinasiList.forEach(item => { hargaList[item.nama] = item.harga; });
+      paketList.forEach(item => { hargaList[item.nama] = item.harga; });
+      
+      // Setelah data diterima, bangun sisa form
+      const form = div.querySelector("#formPemesanan");
+      const today = new Date().toISOString().split("T")[0];
+      form.innerHTML = `
+        <label>Tanggal Kunjungan:</label><br>
+        <input type="date" id="tanggal" name="tanggal" min="${today}" required><br><br>
+        
+        <label>Jenis Tiket:</label><br>
+        <select name="jenis" id="jenisTiket" required>
+          <option value="biasa">Biasa (Per Destinasi)</option>
+          <option value="paket">Paket Terusan</option>
+        </select><br><br>
+        
+        <div id="destinasiWrapper">
+          <label>Destinasi Wisata:</label><br>
+          <select name="destinasi" id="destinasiSelect"></select><br><br>
+        </div>
+        <div id="paketWrapper" style="display: none;">
+          <label>Pilih Paket Wisata:</label><br>
+          <select name="paket" id="paketSelect"></select><br><br>
+        </div>
+        
+        <label>Jumlah Tiket:</label><br>
+        <input type="number" name="jumlah" id="jumlahTiket" min="1" value="1" required><br><br>
+        
+        <p><strong>Total Harga: </strong><span id="totalHarga">Rp 0</span></p>
+        
+        <button type="submit" id="btnSubmit">Lanjut Transaksi</button>
+      `;
+
+      // Buat tombol kembali secara terpisah
+      const btnKembali = document.createElement('button');
+      btnKembali.id = "btnKembaliDashboard";
+      btnKembali.textContent = "Kembali ke Dashboard";
+      btnKembali.style.marginTop = "20px";
+      form.insertAdjacentElement('afterend', btnKembali);
+
+      const messageDiv = document.createElement('div');
+      messageDiv.id = "formMessage";
+      messageDiv.style.cssText = "margin-top: 15px; font-weight: bold; color: red;";
+      form.insertAdjacentElement('afterend', messageDiv);
+      
+      // Sembunyikan pesan loading dan tampilkan form
+      div.querySelector("#loadingMessage").style.display = 'none';
+      form.style.display = 'block';
+
+      // Elemen
+      const jenisTiket = div.querySelector("#jenisTiket");
+      const destinasiSelect = div.querySelector("#destinasiSelect");
+      const paketSelect = div.querySelector("#paketSelect");
+      const jumlahInput = div.querySelector("#jumlahTiket");
+      const totalHargaSpan = div.querySelector("#totalHarga");
+      const submitButton = div.querySelector("#btnSubmit");
+
+      destinasiList.forEach(dest => {
+        const option = document.createElement("option");
+        option.value = dest.nama;
+        option.textContent = `${dest.nama} (Rp ${dest.harga.toLocaleString('id-ID')})`;
+        destinasiSelect.appendChild(option);
+      });
+
+      paketList.forEach(paket => {
+        const option = document.createElement("option");
+        option.value = paket.nama;
+        option.textContent = `${paket.nama} (Rp ${paket.harga.toLocaleString('id-ID')})`;
+        paketSelect.appendChild(option);
+      });
+
+      // Logika untuk menghitung total harga
+      function updateHarga() {
+        const jumlah = parseInt(jumlahInput.value) || 0;
+        const isPaket = jenisTiket.value === "paket";
+        const namaDipilih = isPaket ? paketSelect.value : destinasiSelect.value;
+        const hargaSatuan = hargaList[namaDipilih] || 0;
+        const total = jumlah * hargaSatuan;
+        totalHargaSpan.textContent = `Rp ${total.toLocaleString("id-ID")}`;
       }
       
-      const result = await response.json();
-      console.log('Pesanan berhasil dibuat:', result);
-      
-      // Simpan data ke localStorage untuk digunakan di halaman transaksi berikutnya
-      localStorage.setItem("pemesanan", JSON.stringify(data));
+      // Event listeners untuk update harga otomatis
+      jenisTiket.addEventListener("change", () => {
+        const isPaket = jenisTiket.value === "paket";
+        div.querySelector("#paketWrapper").style.display = isPaket ? "block" : "none";
+        div.querySelector("#destinasiWrapper").style.display = isPaket ? "none" : "block";
+        updateHarga();
+      });
 
-      // 4. Panggil callback jika pemesanan sukses
-      if (onSubmitCallback) onSubmitCallback(data);
+      jumlahInput.addEventListener("input", updateHarga);
+      destinasiSelect.addEventListener("change", updateHarga);
+      paketSelect.addEventListener("change", updateHarga);
+
+      btnKembali.addEventListener("click", () => {
+        if (navigateToDashboard) navigateToDashboard();
+      });
+
+      // Logika untuk submit form
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        submitButton.disabled = true;
+        submitButton.textContent = "Memproses...";
+        messageDiv.textContent = "";
+
+        const isPaket = jenisTiket.value === "paket";
+        const jumlah = parseInt(jumlahInput.value);
+        const namaDipilih = isPaket ? paketSelect.value : destinasiSelect.value;
+        const hargaSatuan = hargaList[namaDipilih] || 0;
+
+        const data = {
+          tanggal_kunjungan: form.tanggal.value,
+          jenis_tiket: jenisTiket.value,
+          nama_item: namaDipilih,
+          jumlah_tiket: jumlah,
+          harga_satuan: hargaSatuan,
+          total_harga: jumlah * hargaSatuan,
+        };
+        
+        try {
+          const saveResponse = await fetch('/.netlify/functions/create-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+
+          if (!saveResponse.ok) {
+            const errorData = await saveResponse.json();
+            throw new Error(errorData.error || 'Gagal menyimpan transaksi ke server.');
+          }
+
+          console.log('Transaksi berhasil disimpan!');
+
+          // Jika ada callback, jalankan. Misalnya, pindah ke halaman Transaksi
+          if (renderContent) renderContent(Transaksi());
+
+        } catch (error) {
+          messageDiv.textContent = error.message;
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "Lanjut Transaksi";
+        }
+      });
+
+      // Panggil updateHarga untuk pertama kali
+      updateHarga();
 
     } catch (error) {
-      // 5. Tangani jika terjadi error
-      console.error('Gagal saat mengirim pesanan:', error);
-      messageDiv.textContent = `Error: ${error.message}`;
-
-    } finally {
-      // 6. Aktifkan kembali tombol apapun hasilnya
-      submitButton.disabled = false;
-      submitButton.textContent = 'Lanjut Transaksi';
+      // Tangani error jika gagal memuat data awal
+      div.querySelector("#loadingMessage").textContent = `Error: ${error.message}`;
+      div.querySelector("#loadingMessage").style.color = 'red';
     }
-  });
+  })();
 
   return div;
 }

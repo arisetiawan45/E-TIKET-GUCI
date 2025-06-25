@@ -1,4 +1,4 @@
-export function PimpinanPage(navigateToDashboard) {
+export default function PimpinanPage(navigateToDashboard) {
     const div = document.createElement('div');
   
     const transaksiData = JSON.parse(localStorage.getItem('transaksi')) || [];
