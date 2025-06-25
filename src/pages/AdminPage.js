@@ -1,172 +1,192 @@
 // src/pages/AdminPage.js
 
-export default function AdminPage(navigateToDashboard) {
+export default function AdminPage() {
   const div = document.createElement("div");
   div.className = "admin-container";
-
-  const transaksiData = JSON.parse(localStorage.getItem("transaksi")) || [];
-  const totalTransaksi = transaksiData.length;
-  const totalTiket = transaksiData.reduce(
-    (total, trx) => total + parseInt(trx.jumlah),
-    0
-  );
-
-  let destinasiList = JSON.parse(localStorage.getItem("destinasiList")) || [
-    "Curug Guci",
-    "Pemandian Air Panas",
-    "Gunung Slamet"
-  ];
-
-  let paketList = JSON.parse(localStorage.getItem("paketList")) || [
-    "Paket 1 - Curug + Air Panas",
-    "Paket 2 - Gunung + Air Panas"
-  ];
-
-  let hargaList = JSON.parse(localStorage.getItem("hargaList")) || {};
-
+  // Menambahkan styling dasar agar lebih rapi
   div.innerHTML = `
+    <style>
+      .admin-form { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+      .admin-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+      .admin-form button { padding: 8px 12px; cursor: pointer; }
+      .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+      .admin-list .item-info p { margin: 5px 0 0 0; font-size: 0.9em; color: #555; }
+      .delete-btn { background-color: #f44336; color: white; border: none; }
+    </style>
     <section style="padding: 20px;">
       <h2>Halaman Admin</h2>
-      <p>Selamat datang, Admin!</p>
+      <p id="loading-message">Memuat data admin...</p>
+      
+      <div id="admin-content" style="display: none;">
+        <div style="margin-top: 20px; display: flex; gap: 40px;">
+          <p><strong>Total Transaksi:</strong> <span id="totalTransaksi">0</span></p>
+          <p><strong>Total Tiket Terjual:</strong> <span id="totalTiket">0</span></p>
+        </div>
 
-      <div style="margin-top: 20px;">
-        <p><strong>Total Transaksi:</strong> ${totalTransaksi}</p>
-        <p><strong>Total Tiket Terjual:</strong> ${totalTiket}</p>
+        <hr>
+        <h3>Kelola Destinasi Wisata</h3>
+        <form id="formDestinasi" class="admin-form">
+          <input type="text" name="nama" placeholder="Nama Destinasi" required>
+          <input type="text" name="deskripsi" placeholder="Deskripsi Singkat" required>
+          <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
+          <button type="submit">Tambah Destinasi</button>
+        </form>
+        <ul id="daftarDestinasi" class="admin-list"></ul>
+
+        <hr>
+        <h3>Kelola Paket Wisata</h3>
+        <form id="formPaket" class="admin-form">
+          <input type="text" name="nama" placeholder="Nama Paket" required>
+          <input type="text" name="deskripsi" placeholder="Deskripsi Singkat" required>
+          <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
+          <button type="submit">Tambah Paket</button>
+        </form>
+        <ul id="daftarPaket" class="admin-list"></ul>
       </div>
-
-      <hr>
-      <h3>Kelola Destinasi Wisata</h3>
-      <form id="formDestinasi">
-        <input type="text" id="inputDestinasi" placeholder="Nama Destinasi" required>
-        <button type="submit">Tambah</button>
-      </form>
-      <ul id="daftarDestinasi"></ul>
-
-      <hr>
-      <h3>Kelola Paket Wisata</h3>
-      <form id="formPaket">
-        <input type="text" id="inputPaket" placeholder="Nama Paket" required>
-        <button type="submit">Tambah</button>
-      </form>
-      <ul id="daftarPaket"></ul>
-
-      <hr>
-      <h3>Kelola Harga Tiket</h3>
-      <form id="formHarga">
-        <input type="text" id="inputHargaNama" placeholder="Nama Destinasi/Paket" required>
-        <input type="number" id="inputHargaNilai" placeholder="Harga (Rp)" required>
-        <button type="submit">Simpan</button>
-      </form>
-      <ul id="daftarHarga"></ul>
-
-      <br>
-      <button id="btnDashboard">Kembali ke Dashboard</button>
     </section>
   `;
 
-  function renderList(list, containerId, key) {
+  // --- State Aplikasi (data dari server) ---
+  let destinasiList = [];
+  let paketList = [];
+
+  // --- Fungsi Render ---
+  const renderList = (list, containerId, type) => {
     const ul = div.querySelector(containerId);
     ul.innerHTML = "";
-    list.forEach((item, index) => {
+    list.forEach(item => {
       const li = document.createElement("li");
       li.innerHTML = `
-        <span>${item}</span>
-        <button data-index="${index}" data-type="edit">Edit</button>
-        <button data-index="${index}" data-type="delete">Hapus</button>
+        <div class="item-info">
+          <strong>${item.nama}</strong> - <span>Rp ${Number(item.harga).toLocaleString('id-ID')}</span>
+          <p>${item.deskripsi || 'Tidak ada deskripsi'}</p>
+        </div>
+        <div class="actions">
+          <button data-id="${item.id}" data-type="${type}" data-action="edit">Edit</button>
+          <button data-id="${item.id}" data-type="${type}" data-action="delete" class="delete-btn">Hapus</button>
+        </div>
       `;
       ul.appendChild(li);
     });
-  }
+  };
 
-  function saveAndRender(list, key, containerId) {
-    localStorage.setItem(key, JSON.stringify(list));
-    renderList(list, containerId, key);
-  }
+  const reRenderAll = () => {
+    renderList(destinasiList, "#daftarDestinasi", "destinasi");
+    renderList(paketList, "#daftarPaket", "paket");
+  };
 
-  function renderHarga() {
-    const ul = div.querySelector("#daftarHarga");
-    ul.innerHTML = "";
-    Object.entries(hargaList).forEach(([nama, harga], index) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${nama} - Rp${parseInt(harga).toLocaleString('id-ID')}</span>
-        <button data-nama="${nama}" data-type="hapusHarga">Hapus</button>
-      `;
-      ul.appendChild(li);
+  // --- Fungsi API ---
+  const fetchData = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/get-admin-data');
+      if (!response.ok) throw new Error('Gagal mengambil data dari server');
+      const data = await response.json();
+
+      destinasiList = data.destinasi;
+      paketList = data.paket;
+      
+      div.querySelector("#totalTransaksi").textContent = data.transaksi.length;
+      div.querySelector("#totalTiket").textContent = data.transaksi.reduce((sum, trx) => sum + (trx.jumlah_tiket || 0), 0);
+
+      reRenderAll();
+
+      div.querySelector("#loading-message").style.display = 'none';
+      div.querySelector("#admin-content").style.display = 'block';
+    } catch (error) {
+      div.querySelector("#loading-message").textContent = `Error: ${error.message}`;
+    }
+  };
+
+  // --- Event Listeners ---
+  const setupEventListeners = () => {
+    const handleFormSubmit = async (e, type) => {
+      e.preventDefault();
+      const form = e.target;
+      const nama = form.nama.value.trim();
+      const deskripsi = form.deskripsi.value.trim();
+      const harga = parseInt(form.harga.value);
+      if (!nama || !deskripsi || isNaN(harga) || harga < 0) {
+        alert('Semua field (Nama, Deskripsi, Harga) harus diisi dengan benar.');
+        return;
+      }
+      try {
+        const response = await fetch('/.netlify/functions/add-item', {
+          method: 'POST',
+          body: JSON.stringify({ type, nama, deskripsi, harga })
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || `Gagal menambah ${type}`);
+        }
+        const newItem = await response.json();
+        
+        if (type === 'destinasi') destinasiList.push(newItem);
+        else paketList.push(newItem);
+        
+        reRenderAll();
+        form.reset();
+      } catch (error) {
+        alert(error.message);
+      }
+    };
+
+    div.querySelector("#formDestinasi").addEventListener("submit", (e) => handleFormSubmit(e, 'destinasi'));
+    div.querySelector("#formPaket").addEventListener("submit", (e) => handleFormSubmit(e, 'paket'));
+    
+    div.addEventListener('click', async (e) => {
+      const { id, type, action } = e.target.dataset;
+      if (!id || !type || !action) return;
+
+      if (action === 'delete') {
+        if (!confirm('Apakah Anda yakin ingin menghapus item ini?')) return;
+        try {
+          const response = await fetch(`/.netlify/functions/delete-item?type=${type}&id=${id}`, { method: 'DELETE' });
+          if (!response.ok) throw new Error('Gagal menghapus item');
+          
+          if (type === 'destinasi') destinasiList = destinasiList.filter(item => item.id != id);
+          if (type === 'paket') paketList = paketList.filter(item => item.id != id);
+          reRenderAll();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+
+      if (action === 'edit') {
+        const list = type === 'destinasi' ? destinasiList : paketList;
+        const item = list.find(i => i.id == id);
+        
+        const newName = prompt('Masukkan nama baru:', item.nama);
+        const newDesc = prompt('Masukkan deskripsi baru:', item.deskripsi);
+        const newHarga = prompt('Masukkan harga baru:', item.harga);
+
+        if (newName === null || newDesc === null || newHarga === null) return;
+        const hargaInt = parseInt(newHarga);
+        if (!newName.trim() || !newDesc.trim() || isNaN(hargaInt) || hargaInt < 0) {
+          alert('Input tidak valid');
+          return;
+        }
+
+        try {
+          const response = await fetch('/.netlify/functions/update-item', {
+            method: 'PUT',
+            body: JSON.stringify({ type, id, nama: newName.trim(), deskripsi: newDesc.trim(), harga: hargaInt })
+          });
+          if (!response.ok) throw new Error('Gagal mengupdate item');
+          const updatedItem = await response.json();
+          
+          const index = list.findIndex(i => i.id == id);
+          list[index] = updatedItem;
+          reRenderAll();
+        } catch(error) {
+          alert(error.message);
+        }
+      }
     });
-  }
+  };
 
-  div.querySelector("#formDestinasi").addEventListener("submit", e => {
-    e.preventDefault();
-    const input = div.querySelector("#inputDestinasi").value.trim();
-    if (input && !destinasiList.includes(input)) {
-      destinasiList.push(input);
-      saveAndRender(destinasiList, "destinasiList", "#daftarDestinasi");
-      e.target.reset();
-    }
-  });
-
-  div.querySelector("#formPaket").addEventListener("submit", e => {
-    e.preventDefault();
-    const input = div.querySelector("#inputPaket").value.trim();
-    if (input && !paketList.includes(input)) {
-      paketList.push(input);
-      saveAndRender(paketList, "paketList", "#daftarPaket");
-      e.target.reset();
-    }
-  });
-
-  div.querySelector("#formHarga").addEventListener("submit", e => {
-    e.preventDefault();
-    const nama = div.querySelector("#inputHargaNama").value.trim();
-    const nilai = parseInt(div.querySelector("#inputHargaNilai").value);
-    if (nama && nilai > 0) {
-      hargaList[nama] = nilai;
-      localStorage.setItem("hargaList", JSON.stringify(hargaList));
-      renderHarga();
-      e.target.reset();
-    }
-  });
-
-  div.addEventListener("click", e => {
-    const type = e.target.dataset.type;
-    const index = parseInt(e.target.dataset.index);
-    const nama = e.target.dataset.nama;
-    const parentUl = e.target.closest("ul");
-
-    if (type === "hapusHarga" && nama) {
-      delete hargaList[nama];
-      localStorage.setItem("hargaList", JSON.stringify(hargaList));
-      renderHarga();
-    } else if (type && !isNaN(index)) {
-      let list, key, containerId;
-      if (parentUl.id === "daftarDestinasi") {
-        list = destinasiList;
-        key = "destinasiList";
-        containerId = "#daftarDestinasi";
-      } else {
-        list = paketList;
-        key = "paketList";
-        containerId = "#daftarPaket";
-      }
-
-      if (type === "delete") {
-        list.splice(index, 1);
-      } else if (type === "edit") {
-        const newValue = prompt("Edit item:", list[index]);
-        if (newValue) list[index] = newValue.trim();
-      }
-      saveAndRender(list, key, containerId);
-    }
-  });
-
-  renderList(destinasiList, "#daftarDestinasi", "destinasiList");
-  renderList(paketList, "#daftarPaket", "paketList");
-  renderHarga();
-
-  div.querySelector("#btnDashboard").addEventListener("click", () => {
-    navigateToDashboard();
-  });
+  // --- Inisialisasi ---
+  fetchData();
+  setupEventListeners();
 
   return div;
 }

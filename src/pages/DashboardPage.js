@@ -13,7 +13,7 @@ export default function DashboardPage() {
     <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #f0f0f0;">
       <div>
         <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
-        <small>Peran: ${userRoles.join(', ') || 'pengunjung'}</small>
+        <small>Peran: ${userRoles.join(', ') || 'pengunjung'} (Mode Development)</small>
       </div>
       <button id="logoutBtn" style="padding: 8px 15px;">Logout</button>
     </header>
@@ -25,24 +25,23 @@ export default function DashboardPage() {
   const contentArea = div.querySelector('#content');
   
   // --- Navigasi menggunakan <a> (Anchor/Link) ---
+  // Perubahan: Tampilkan link "Halaman Admin" tanpa memeriksa peran
   nav.innerHTML = `
     <a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>
     <a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>
-    ${userRoles.includes('admin') ? `<a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>` : ''}
+    <a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>
     ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link" style="margin: 0 10px;">Halaman Pimpinan</a>` : ''}
   `;
   
   // --- SUB-ROUTER untuk konten di dalam Dashboard ---
   const renderSubPage = () => {
-    // Mendapatkan bagian hash setelah '#/dashboard/'
-    const subpath = window.location.hash.split('/')[2] || 'pesan'; // Default ke 'pesan'
+    // Perubahan: Jadikan 'admin' sebagai halaman default
+    const subpath = window.location.hash.split('/')[2] || 'admin';
     
     contentArea.innerHTML = ''; // Kosongkan konten
 
     switch(subpath) {
       case 'pesan':
-        // Pemesanan sekarang perlu cara untuk pindah ke transaksi,
-        // jadi kita berikan fungsi navigasi.
         const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
         contentArea.appendChild(Pemesanan(navigateToTransaksi));
         break;
@@ -50,18 +49,20 @@ export default function DashboardPage() {
         contentArea.appendChild(Transaksi());
         break;
       case 'admin':
-        if (userRoles.includes('admin')) {
-          contentArea.appendChild(AdminPage());
-        }
+        // Perubahan: Hapus if-check, langsung render AdminPage
+        contentArea.appendChild(AdminPage());
         break;
       case 'pimpinan':
         if (userRoles.includes('pimpinan')) {
           contentArea.appendChild(PimpinanPage());
+        } else {
+          // Jika pengguna biasa mencoba akses pimpinan, arahkan ke admin
+           window.location.hash = '#/dashboard/admin';
         }
         break;
       default:
-        // Jika sub-rute tidak ditemukan, kembali ke default
-        contentArea.appendChild(Pemesanan(() => window.location.hash = '#/dashboard/transaksi'));
+        // Jika sub-rute tidak ditemukan, kembali ke halaman admin
+        window.location.hash = '#/dashboard/admin';
         break;
     }
   };
