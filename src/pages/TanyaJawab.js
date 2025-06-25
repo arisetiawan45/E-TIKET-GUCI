@@ -1,4 +1,4 @@
-export function TanyaJawab(navigateBack) {
+export default function TanyaJawab(navigateBack) {
     const div = document.createElement('div');
     div.innerHTML = `
       <section style="padding: 20px;">

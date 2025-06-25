@@ -1,61 +1,94 @@
 import './styles/main.css';
-// Impor komponen halaman utama
-import WelcomePage from './pages/WelcomePage'; // Menggunakan default import
-import DashboardPage from './pages/DashboardPage'; // Menggunakan default import
+// Impor semua komponen halaman yang akan menjadi 'rute'
+import WelcomePage from './pages/WelcomePage';
+import DashboardPage from './pages/DashboardPage';
+// Halaman lain yang diimpor berdasarkan permintaan Anda
+import KontakPage from './pages/Kontak';
+import TanyaJawabPage from './pages/TanyaJawab';
+import TutorialPage from './pages/Tutorial';
 
-// Menunggu hingga seluruh dokumen HTML selesai dimuat sebelum menjalankan JavaScript
+
+// Menunggu hingga seluruh dokumen HTML selesai dimuat
 window.addEventListener('DOMContentLoaded', () => {
-  // Dapatkan elemen root dari HTML Anda (sekarang dijamin sudah ada)
   const app = document.getElementById('app');
 
-  // Pastikan kita tidak melanjutkan jika elemen 'app' tidak ditemukan
   if (!app) {
-    console.error("Error: Elemen dengan id 'app' tidak ditemukan di DOM.");
+    console.error("KRITIS: Elemen dengan id 'app' tidak ditemukan.");
     return;
   }
 
-  // --- Fungsi Navigasi Utama ---
-  function navigateToWelcome() {
+  // --- Router Utama ---
+  const router = () => {
+    // Logika router tetap sama, sudah benar
+    const path = window.location.hash.slice(1) || '/';
     app.innerHTML = '';
-    // WelcomePage akan memanggil netlifyIdentity.open('login') secara internal
-    app.appendChild(WelcomePage());
-  }
+    const user = netlifyIdentity.currentUser();
 
-  function navigateToDashboard() {
-    app.innerHTML = '';
-    // DashboardPage akan berisi semua tombol navigasi dan logika setelah login
-    app.appendChild(DashboardPage());
-  }
+    if (!user) {
+      app.appendChild(WelcomePage());
+    } else {
+      // Periksa apakah path dimulai dengan /dashboard untuk menangani sub-rute
+      if (path.startsWith('/dashboard')) {
+        app.appendChild(DashboardPage());
+        return; // Hentikan eksekusi agar tidak masuk ke switch
+      }
 
-  // --- Event Listener Netlify Identity ---
+      switch (path) {
+        case '/':
+          // Jika path hanya '/', arahkan ke dasbor
+          window.location.hash = '#/dashboard';
+          break;
+        
+        // --- RUTE BARU DITAMBAHKAN DI SINI ---
+        case '/kontak':
+          app.appendChild(KontakPage());
+          break;
+        case '/tanya-jawab':
+          app.appendChild(TanyaJawabPage());
+          break;
+        case '/tutorial':
+          app.appendChild(TutorialPage());
+          break;
 
-  // Pastikan objek netlifyIdentity ada sebelum menambahkan listener
+        default:
+          // Jika rute tidak ditemukan, arahkan kembali ke dasbor
+          window.location.hash = '#/dashboard';
+          break;
+      }
+    }
+  };
+
+  // --- PERUBAHAN UTAMA PADA LOGIKA EVENT LISTENER ---
+
+  // 1. Jalankan router SEGERA setelah halaman dimuat.
+  // Ini akan memastikan halaman tidak pernah kosong.
+  // Pada titik ini, 'user' kemungkinan besar null, jadi WelcomePage akan ditampilkan.
+  router();
+
+  // 2. Dengarkan perubahan hash untuk navigasi selanjutnya.
+  window.addEventListener('hashchange', router);
+  
+  // 3. Pasang listener Netlify untuk menangani perubahan status login.
   if (window.netlifyIdentity) {
-    // 1. Dipanggil saat halaman dimuat
+    // Event 'init' sekarang tugasnya adalah me-render ulang jika pengguna SUDAH login.
     window.netlifyIdentity.on('init', (user) => {
       if (user) {
-        // Jika ada sesi login aktif, langsung ke dasbor
-        console.log('Sesi aktif, menampilkan dasbor.');
-        navigateToDashboard();
-      } else {
-        // Jika tidak ada sesi, tampilkan halaman selamat datang
-        console.log('Tidak ada sesi, menampilkan halaman selamat datang.');
-        navigateToWelcome();
+        console.log('Pengguna sudah login dari sesi sebelumnya, render ulang.');
+        // Jalankan router lagi untuk beralih ke halaman yang benar berdasarkan hash
+        router(); 
       }
     });
 
-    // 2. Dipanggil setelah login berhasil
-    window.netlifyIdentity.on('login', (user) => {
-      console.log('Login berhasil, menampilkan dasbor.');
-      navigateToDashboard();
+    // Listener 'login' akan mengubah hash, yang kemudian memicu 'hashchange'.
+    window.netlifyIdentity.on('login', () => {
+      window.location.hash = '#/dashboard';
     });
 
-    // 3. Dipanggil setelah logout berhasil
+    // Listener 'logout' akan mengubah hash, yang kemudian memicu 'hashchange'.
     window.netlifyIdentity.on('logout', () => {
-      console.log('Logout berhasil, kembali ke halaman selamat datang.');
-      navigateToWelcome();
+      window.location.hash = '#/';
     });
   } else {
-    console.error('Netlify Identity widget tidak ditemukan. Pastikan skrip sudah dimuat dengan benar.');
+    console.error('Netlify Identity widget tidak ditemukan.');
   }
 });

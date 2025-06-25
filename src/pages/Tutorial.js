@@ -1,4 +1,4 @@
-export function Tutorial(navigateBack) {
+export default function Tutorial(navigateBack) {
     const div = document.createElement('div');
     div.innerHTML = `
       <section style="padding: 20px;">

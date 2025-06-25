@@ -1,4 +1,4 @@
-export function Kontak(navigateBack) {
+export default function Kontak(navigateBack) {
     const div = document.createElement('div');
     div.innerHTML = `
       <section style="padding: 20px;">

@@ -1,9 +1,8 @@
 // pages/DashboardPage.js
-import  Pemesanan  from '../components/Pemesanan';
-import  Transaksi  from '../components/Transaksi';
-import  AdminPage  from './AdminPage';
-import  PimpinanPage  from './PimpinanPage';
-
+import Pemesanan from '../components/Pemesanan';
+import Transaksi from '../components/Transaksi';
+import AdminPage from './AdminPage';
+import PimpinanPage from './PimpinanPage';
 
 export default function DashboardPage() {
   const div = document.createElement('div');
@@ -13,70 +12,70 @@ export default function DashboardPage() {
   div.innerHTML = `
     <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #f0f0f0;">
       <div>
-          <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
-          <small>Peran: ${userRoles.join(', ') || 'pengunjung'}</small>
+        <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
+        <small>Peran: ${userRoles.join(', ') || 'pengunjung'}</small>
       </div>
       <button id="logoutBtn" style="padding: 8px 15px;">Logout</button>
     </header>
     <nav id="main-nav" style="padding: 20px; text-align: center; border-bottom: 1px solid #ccc;"></nav>
     <main id="content" style="padding: 20px;"></main>
   `;
-  
+
   const nav = div.querySelector('#main-nav');
   const contentArea = div.querySelector('#content');
-
-  // Fungsi ini bertugas mengganti konten di <main>
-  const renderContent = (pageComponent) => {
-    contentArea.innerHTML = '';
-    contentArea.appendChild(pageComponent);
-  };
   
-  // --- Tombol Navigasi ---
+  // --- Navigasi menggunakan <a> (Anchor/Link) ---
+  nav.innerHTML = `
+    <a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>
+    <a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>
+    ${userRoles.includes('admin') ? `<a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>` : ''}
+    ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link" style="margin: 0 10px;">Halaman Pimpinan</a>` : ''}
+  `;
+  
+  // --- SUB-ROUTER untuk konten di dalam Dashboard ---
+  const renderSubPage = () => {
+    // Mendapatkan bagian hash setelah '#/dashboard/'
+    const subpath = window.location.hash.split('/')[2] || 'pesan'; // Default ke 'pesan'
+    
+    contentArea.innerHTML = ''; // Kosongkan konten
 
-  // Tombol untuk 'Pesan Tiket'
-  const tombolPemesanan = document.createElement('button');
-  tombolPemesanan.textContent = 'Pesan Tiket';
-  // Saat diklik, panggil renderContent untuk menampilkan halaman Pemesanan
-  tombolPemesanan.onclick = () => {
-    renderContent(Pemesanan(renderContent));
+    switch(subpath) {
+      case 'pesan':
+        // Pemesanan sekarang perlu cara untuk pindah ke transaksi,
+        // jadi kita berikan fungsi navigasi.
+        const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
+        contentArea.appendChild(Pemesanan(navigateToTransaksi));
+        break;
+      case 'transaksi':
+        contentArea.appendChild(Transaksi());
+        break;
+      case 'admin':
+        if (userRoles.includes('admin')) {
+          contentArea.appendChild(AdminPage());
+        }
+        break;
+      case 'pimpinan':
+        if (userRoles.includes('pimpinan')) {
+          contentArea.appendChild(PimpinanPage());
+        }
+        break;
+      default:
+        // Jika sub-rute tidak ditemukan, kembali ke default
+        contentArea.appendChild(Pemesanan(() => window.location.hash = '#/dashboard/transaksi'));
+        break;
+    }
   };
-  nav.appendChild(tombolPemesanan);
 
-  // Tombol untuk 'Lihat Transaksi'
-  const tombolTransaksi = document.createElement('button');
-  tombolTransaksi.textContent = 'Lihat Transaksi';
-  tombolTransaksi.style.marginLeft = '10px';
-  // Saat diklik, panggil renderContent untuk menampilkan halaman Transaksi
-  tombolTransaksi.onclick = () => {
-    renderContent(Transaksi());
-  };
-  nav.appendChild(tombolTransaksi);
+  // Dengarkan perubahan hash untuk menavigasi antar sub-halaman
+  window.addEventListener('hashchange', renderSubPage);
 
-  // Tombol Admin (berdasarkan peran)
-  if (userRoles.includes('admin')) {
-    const tombolAdmin = document.createElement('button');
-    tombolAdmin.textContent = 'Halaman Admin';
-    tombolAdmin.style.marginLeft = '10px';
-    tombolAdmin.onclick = () => renderContent(AdminPage());
-    nav.appendChild(tombolAdmin);
-  }
-
-  // Tombol Pimpinan (berdasarkan peran)
-  if (userRoles.includes('pimpinan')) {
-      const tombolPimpinan = document.createElement('button');
-      tombolPimpinan.textContent = 'Halaman Pimpinan';
-      tombolPimpinan.style.marginLeft = '10px';
-      tombolPimpinan.onclick = () => renderContent(PimpinanPage());
-      nav.appendChild(tombolPimpinan);
-  }
-
-  // Event listener untuk tombol logout
+  // Render halaman default saat Dashboard pertama kali dimuat
+  renderSubPage();
+  
+  // Event listener untuk tombol logout tetap sama
   div.querySelector('#logoutBtn').addEventListener('click', () => {
     netlifyIdentity.logout();
   });
-  
-  // Menampilkan halaman Pemesanan secara default saat Dasbor pertama kali dimuat
-  renderContent(Pemesanan(renderContent));
 
   return div;
 }
