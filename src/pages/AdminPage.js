@@ -1,6 +1,6 @@
 // src/pages/AdminPage.js
 
-export function AdminPage(navigateToDashboard) {
+export default function AdminPage(navigateToDashboard) {
   const div = document.createElement("div");
   div.className = "admin-container";
 
