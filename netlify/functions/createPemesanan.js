@@ -1,8 +1,9 @@
+// Nama file ini bisa create-pemesanan.js atau nama lain yang sesuai
 import { Pool } from '@neondatabase/serverless';
 
 export const handler = async (event) => {
   // Log untuk menandakan fungsi dimulai
-  console.log('Function createPemesanan dipanggil.');
+  console.log('Fungsi createPemesanan dipanggil.');
 
   if (event.httpMethod !== 'POST') {
     return {
@@ -14,37 +15,55 @@ export const handler = async (event) => {
   let pool;
 
   try {
+    // 1. Ambil data yang dikirim dari frontend (Pemesanan.js)
     const data = JSON.parse(event.body);
-    // Log data yang diterima dari frontend agar kita bisa memeriksanya
     console.log('Menerima data dari frontend:', JSON.stringify(data, null, 2));
 
-    const { tanggal, jumlah, destinasi, paket } = data;
+    const { 
+      tanggal_kunjungan, 
+      jenis_tiket, 
+      nama_item, 
+      jumlah_tiket, 
+      total_harga 
+    } = data;
     
-    if (!tanggal || !jumlah) {
-        console.error('Validasi gagal: Tanggal atau jumlah tiket kosong.');
+    // Validasi data yang diterima
+    if (!tanggal_kunjungan || !jenis_tiket || !nama_item || !jumlah_tiket || total_harga === undefined) {
+        console.error('Validasi gagal: Data dari frontend tidak lengkap.');
         return {
             statusCode: 400,
-            body: JSON.stringify({ error: 'Data tidak lengkap. Tanggal dan jumlah tiket wajib diisi.' }),
+            body: JSON.stringify({ error: 'Data yang dikirim tidak lengkap.' }),
         };
     }
 
     pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL });
 
-    // Query SQL disesuaikan untuk menyertakan SEMUA kolom yang mungkin
-    // Kita akan memberikan nilai NULL untuk id_paket dan id_pembayaran
+    // 2. Query SQL disesuaikan dengan nama kolom di tabel baru Anda
     const sqlQuery = `
-      INSERT INTO pemesanan (tanggal, jumlah_tiket, destinasi_wisata, id_paket, id_pembayaran) 
-      VALUES ($1, $2, $3, $4, $5) 
-      RETURNING id_pemesanan;
+      INSERT INTO pemesanan (
+        tanggal_kunjungan, 
+        jenis_tiket, 
+        nama, 
+        jumlah, 
+        total,
+        destinasi_id, 
+        paket_id
+      ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      RETURNING id;
     `;
 
-    // Siapkan values. Untuk kolom yang belum ada datanya, kita isi dengan null.
+    // 3. Siapkan values sesuai urutan kolom di query
+    // Untuk destinasi_id dan paket_id, kita isi dengan null untuk sementara
+    // karena frontend mengirimkan nama, bukan ID.
     const values = [
-      tanggal,                   // $1
-      parseInt(jumlah, 10),      // $2
-      destinasi,                 // $3
-      null,                      // $4 -> untuk id_paket
-      null                       // $5 -> untuk id_pembayaran
+      tanggal_kunjungan,       // $1
+      jenis_tiket,             // $2
+      nama_item,               // $3 (Mengisi kolom 'nama' dengan nama destinasi/paket)
+      parseInt(jumlah_tiket, 10),// $4 (Mengisi kolom 'jumlah')
+      parseInt(total_harga, 10), // $5 (Mengisi kolom 'total')
+      null,                    // $6 -> untuk destinasi_id
+      null                     // $7 -> untuk paket_id
     ];
     
     console.log('Akan menjalankan query SQL:', sqlQuery);
@@ -52,20 +71,22 @@ export const handler = async (event) => {
 
     const result = await pool.query(sqlQuery, values);
     
+    // Pastikan koneksi ditutup setelah selesai
     await pool.end();
-    console.log('Pemesanan berhasil, ID baru:', result.rows[0].id_pemesanan);
+    
+    const newId = result.rows[0].id;
+    console.log('Pemesanan berhasil, ID baru:', newId);
 
     return {
-      statusCode: 201,
+      statusCode: 201, // 201 Created adalah status yang lebih tepat
       body: JSON.stringify({ 
         message: 'Pemesanan berhasil dibuat!', 
-        id: result.rows[0].id_pemesanan
+        id: newId
       }),
     };
 
   } catch (error) {
-    // Log error yang sebenarnya dan detail dari server
-    console.error('!!! TERJADI ERROR FATAL DI DALAM FUNGSI !!!:', error);
+    console.error('!!! TERJADI ERROR DI DALAM FUNGSI !!!:', error);
     
     if (pool) {
       await pool.end();
@@ -73,7 +94,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Terjadi kesalahan internal pada server saat menyimpan pesanan.' }),
+      body: JSON.stringify({ error: 'Terjadi kesalahan pada server saat menyimpan pesanan.' }),
     };
   }
 };

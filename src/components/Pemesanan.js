@@ -1,9 +1,7 @@
 // components/Pemesanan.js
 
-// Impor komponen Transaksi jika Anda ingin pindah halaman setelah submit
-import Transaksi from './Transaksi';
-
-export default function Pemesanan(renderContent, navigateToDashboard) {
+// Parameter disesuaikan menjadi navigateToTransaksi
+export default function Pemesanan(navigateToTransaksi) {
   const div = document.createElement("div");
   div.className = "pemesanan-container";
 
@@ -25,7 +23,7 @@ export default function Pemesanan(renderContent, navigateToDashboard) {
       }
       const initialData = await response.json();
 
-      // Olah data yang diterima dari Neon DB (struktur lebih sederhana)
+      // Olah data yang diterima dari Neon DB
       const destinasiList = initialData.destinasi;
       const paketList = initialData.paket;
       
@@ -36,40 +34,37 @@ export default function Pemesanan(renderContent, navigateToDashboard) {
       // Setelah data diterima, bangun sisa form
       const form = div.querySelector("#formPemesanan");
       const today = new Date().toISOString().split("T")[0];
+      // PENAMBAHAN: Input untuk Nama Pemesan
       form.innerHTML = `
-        <label>Tanggal Kunjungan:</label><br>
+        <label for="namaPemesan">Nama Pemesan:</label><br>
+        <input type="text" id="namaPemesan" name="nama" placeholder="Masukkan nama lengkap Anda" required><br><br>
+
+        <label for="tanggal">Tanggal Kunjungan:</label><br>
         <input type="date" id="tanggal" name="tanggal" min="${today}" required><br><br>
         
-        <label>Jenis Tiket:</label><br>
+        <label for="jenisTiket">Jenis Tiket:</label><br>
         <select name="jenis" id="jenisTiket" required>
           <option value="biasa">Biasa (Per Destinasi)</option>
           <option value="paket">Paket Terusan</option>
         </select><br><br>
         
         <div id="destinasiWrapper">
-          <label>Destinasi Wisata:</label><br>
+          <label for="destinasiSelect">Destinasi Wisata:</label><br>
           <select name="destinasi" id="destinasiSelect"></select><br><br>
         </div>
         <div id="paketWrapper" style="display: none;">
-          <label>Pilih Paket Wisata:</label><br>
+          <label for="paketSelect">Pilih Paket Wisata:</label><br>
           <select name="paket" id="paketSelect"></select><br><br>
         </div>
         
-        <label>Jumlah Tiket:</label><br>
+        <label for="jumlahTiket">Jumlah Tiket:</label><br>
         <input type="number" name="jumlah" id="jumlahTiket" min="1" value="1" required><br><br>
         
         <p><strong>Total Harga: </strong><span id="totalHarga">Rp 0</span></p>
         
         <button type="submit" id="btnSubmit">Lanjut Transaksi</button>
       `;
-
-      // Buat tombol kembali secara terpisah
-      const btnKembali = document.createElement('button');
-      btnKembali.id = "btnKembaliDashboard";
-      btnKembali.textContent = "Kembali ke Dashboard";
-      btnKembali.style.marginTop = "20px";
-      form.insertAdjacentElement('afterend', btnKembali);
-
+      
       const messageDiv = document.createElement('div');
       messageDiv.id = "formMessage";
       messageDiv.style.cssText = "margin-top: 15px; font-weight: bold; color: red;";
@@ -90,14 +85,14 @@ export default function Pemesanan(renderContent, navigateToDashboard) {
       destinasiList.forEach(dest => {
         const option = document.createElement("option");
         option.value = dest.nama;
-        option.textContent = `${dest.nama} (Rp ${dest.harga.toLocaleString('id-ID')})`;
+        option.textContent = `${dest.nama} (Rp ${Number(dest.harga).toLocaleString('id-ID')})`;
         destinasiSelect.appendChild(option);
       });
 
       paketList.forEach(paket => {
         const option = document.createElement("option");
         option.value = paket.nama;
-        option.textContent = `${paket.nama} (Rp ${paket.harga.toLocaleString('id-ID')})`;
+        option.textContent = `${paket.nama} (Rp ${Number(paket.harga).toLocaleString('id-ID')})`;
         paketSelect.appendChild(option);
       });
 
@@ -123,10 +118,6 @@ export default function Pemesanan(renderContent, navigateToDashboard) {
       destinasiSelect.addEventListener("change", updateHarga);
       paketSelect.addEventListener("change", updateHarga);
 
-      btnKembali.addEventListener("click", () => {
-        if (navigateToDashboard) navigateToDashboard();
-      });
-
       // Logika untuk submit form
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -139,17 +130,19 @@ export default function Pemesanan(renderContent, navigateToDashboard) {
         const namaDipilih = isPaket ? paketSelect.value : destinasiSelect.value;
         const hargaSatuan = hargaList[namaDipilih] || 0;
 
+        // PENAMBAHAN: Data nama pemesan diambil dari form
         const data = {
+          nama: form.nama.value, // Mengambil nilai dari input nama
           tanggal_kunjungan: form.tanggal.value,
           jenis_tiket: jenisTiket.value,
           nama_item: namaDipilih,
           jumlah_tiket: jumlah,
-          harga_satuan: hargaSatuan,
           total_harga: jumlah * hargaSatuan,
         };
         
         try {
-          const saveResponse = await fetch('/.netlify/functions/create-transaction', {
+          // Endpoint disesuaikan dengan nama fungsi yang relevan
+          const saveResponse = await fetch('/.netlify/functions/create-pemesanan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -162,8 +155,8 @@ export default function Pemesanan(renderContent, navigateToDashboard) {
 
           console.log('Transaksi berhasil disimpan!');
 
-          // Jika ada callback, jalankan. Misalnya, pindah ke halaman Transaksi
-          if (renderContent) renderContent(Transaksi());
+          // Panggil fungsi navigasi yang diberikan oleh DashboardPage untuk pindah halaman
+          if (navigateToTransaksi) navigateToTransaksi();
 
         } catch (error) {
           messageDiv.textContent = error.message;
