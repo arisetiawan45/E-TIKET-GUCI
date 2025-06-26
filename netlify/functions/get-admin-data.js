@@ -6,7 +6,7 @@ exports.handler = async () => {
   try {
     // MENYESUAIKAN NAMA TABEL DAN KOLOM, MENGGUNAKAN ALIAS (as) AGAR FRONTEND TIDAK RUSAK
     const [destinasi, paket_wisata, transaksi] = await sql.begin(async sql => [
-      await sql`SELECT id_destinasi as id, nama_destinasi as nama, deskripsi, harga FROM destinasi ORDER BY nama_destinasi ASC`,
+      await sql`SELECT id as id, nama as nama, deskripsi, harga FROM destinasi ORDER BY nama_destinasi ASC`,
       await sql`SELECT id_paket as id, nama_paket as nama, deskripsi, harga FROM paket_wisata ORDER BY nama_paket ASC`,
       await sql`SELECT id_transaksi as id, jumlah_tiket, total_harga FROM transaksi`,
     ]);

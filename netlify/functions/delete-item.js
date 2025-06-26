@@ -9,7 +9,7 @@ exports.handler = async (event) => {
     
     let query;
     if (type === 'destinasi') {
-      query = sql`DELETE FROM destinasi WHERE id_destinasi = ${id}`;
+      query = sql`DELETE FROM destinasi WHERE id = ${id}`;
     } else if (type === 'paket') {
       query = sql`DELETE FROM paket_wisata WHERE id_paket = ${id}`;
     } else {
