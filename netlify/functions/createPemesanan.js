@@ -28,7 +28,7 @@ export const handler = async (event) => {
         };
     }
 
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL });
 
     // Query SQL disesuaikan untuk menyertakan SEMUA kolom yang mungkin
     // Kita akan memberikan nilai NULL untuk id_paket dan id_pembayaran

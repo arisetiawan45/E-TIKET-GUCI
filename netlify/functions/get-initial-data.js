@@ -11,7 +11,7 @@ exports.handler = async (event, context) => {
     // Jalankan beberapa query SQL secara bersamaan dalam satu transaksi
     const [destinasi, paket] = await sql.begin(async sql => [
       await sql`SELECT * FROM destinasi`,
-      await sql`SELECT * FROM paket`,
+      await sql`SELECT * FROM paket_wisata`,
     ]);
     
     // Kirim data kembali ke frontend
