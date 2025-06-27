@@ -1,15 +1,14 @@
-// File: netlify/functions/delete-item.js
-const postgres = require('postgres');
+const postgres_delete = require('postgres');
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'DELETE') return { statusCode: 405 };
-  const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
+  if (event.httpMethod !== 'DELETE') return { statusCode: 405, body: 'Method Not Allowed' };
+  const sql = postgres_delete(process.env.NEON_DATABASE_URL, { ssl: 'require' });
   try {
     const { type, id } = event.queryStringParameters;
     
     let query;
     if (type === 'destinasi') {
-      query = sql`DELETE FROM destinasi WHERE id = ${id}`;
+      query = sql`DELETE FROM destinasi WHERE id_destinasi = ${id}`;
     } else if (type === 'paket') {
       query = sql`DELETE FROM paket_wisata WHERE id_paket = ${id}`;
     } else {

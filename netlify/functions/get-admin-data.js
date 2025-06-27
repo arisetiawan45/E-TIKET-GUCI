@@ -1,16 +1,13 @@
-// File: netlify/functions/get-admin-data.js
 const postgres = require('postgres');
 
 exports.handler = async () => {
   const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
   try {
-    // MENYESUAIKAN NAMA TABEL DAN KOLOM, MENGGUNAKAN ALIAS (as) AGAR FRONTEND TIDAK RUSAK
     const [destinasi, paket_wisata, transaksi] = await sql.begin(async sql => [
-      await sql`SELECT id as id, nama, harga FROM destinasi ORDER BY nama ASC`,
-      await sql`SELECT id_paket as id, nama_paket as nama, harga_paket FROM paket_wisata ORDER BY nama_paket ASC`,
-      await sql`SELECT id_transaksi as id, jumlah_tiket, total_harga FROM transaksi`,
+      await sql`SELECT id_destinasi as id, nama, deskripsi, harga FROM destinasi ORDER BY nama ASC`,
+      await sql`SELECT id_paket as id, nama_paket as nama, deskripsi, harga_paket as harga FROM paket_wisata ORDER BY nama_paket ASC`,
+      await sql`SELECT id_transaksi as id, jumlah, total FROM pemesanan INNER JOIN transaksi ON pemesanan.id_pemesanan = transaksi.id_pemesanan`,
     ]);
-    // Nama properti 'paket' diubah menjadi 'paket_wisata' agar lebih jelas
     return {
       statusCode: 200,
       body: JSON.stringify({ destinasi, paket: paket_wisata, transaksi }),
@@ -19,8 +16,3 @@ exports.handler = async () => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Gagal mengambil data admin.' }) };
   }
 };
-
-
-
-
-
