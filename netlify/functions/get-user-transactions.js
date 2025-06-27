@@ -23,7 +23,7 @@ exports.handler = async (event, context) => {
         t.status
       FROM transaksi t
       INNER JOIN pemesanan p ON t.id_pemesanan = p.id_pemesanan
-      WHERE p.user_id = ${userId}
+      WHERE p.id_user = ${userId}
       ORDER BY p.tanggal_kunjungan DESC
     `;
 
