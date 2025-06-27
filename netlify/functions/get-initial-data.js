@@ -11,10 +11,10 @@ export const handler = async (event, context) => {
     // Jalankan beberapa query SQL secara bersamaan dalam satu transaksi
     const [destinasi, paket] = await sql.begin(async sql => [
       // Mengambil data destinasi dan menggunakan alias agar konsisten
-      await sql`SELECT id_destinasi as id, nama, harga FROM destinasi ORDER BY nama ASC`,
+      await sql`SELECT id_destinasi as id, nama,deskripsi , harga FROM destinasi ORDER BY nama ASC`,
       
       // Mengambil data paket dan menggunakan alias agar konsisten
-      await sql`SELECT id_paket as id, nama_paket as nama, harga_paket as harga FROM paket_wisata ORDER BY nama_paket ASC`,
+      await sql`SELECT id_paket as id, nama_paket as nama,deskripsi ,harga_paket as harga FROM paket_wisata ORDER BY nama_paket ASC`,
     ]);
     
     // Kirim data kembali ke frontend dengan struktur yang diharapkan
