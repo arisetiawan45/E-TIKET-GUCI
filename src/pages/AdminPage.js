@@ -1,3 +1,5 @@
+// src/pages/AdminPage.js
+
 export default function AdminPage() {
   const div = document.createElement("div");
   div.className = "admin-container";
@@ -5,12 +7,13 @@ export default function AdminPage() {
   div.innerHTML = `
     <style>
       .admin-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
-      .admin-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+      .admin-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex-grow: 1; }
       .admin-form button { padding: 8px 12px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 4px;}
+      .admin-list { list-style: none; padding: 0; }
       .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
       .admin-list .item-info p { margin: 5px 0 0 0; font-size: 0.9em; color: #555; }
       .delete-btn { background-color: #dc3545; color: white; border: none; }
-      #transaksiTable { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      #transaksiTable { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
       #transaksiTable th, #transaksiTable td { border: 1px solid #ddd; padding: 8px; text-align: left; }
       #transaksiTable th { background-color: #f2f2f2; }
       .status-select { padding: 5px; border-radius: 4px; }
@@ -27,8 +30,8 @@ export default function AdminPage() {
 
         <hr>
         <h3>Kelola Destinasi & Paket</h3>
-        <div style="display: flex; gap: 50px;">
-          <div style="flex: 1;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 50px;">
+          <div>
             <h4>Destinasi Wisata</h4>
             <form id="formDestinasi" class="admin-form">
               <input type="text" name="nama" placeholder="Nama Destinasi" required>
@@ -38,7 +41,7 @@ export default function AdminPage() {
             </form>
             <ul id="daftarDestinasi" class="admin-list"></ul>
           </div>
-          <div style="flex: 1;">
+          <div>
             <h4>Paket Wisata</h4>
             <form id="formPaket" class="admin-form">
               <input type="text" name="nama" placeholder="Nama Paket" required>
@@ -70,15 +73,36 @@ export default function AdminPage() {
     </section>
   `;
 
-  // --- State Aplikasi ---
+  // --- State Aplikasi (data dari server) ---
   let destinasiList = [];
   let paketList = [];
   let transaksiList = [];
 
   // --- Fungsi Render ---
-  const renderList = (list, containerId, type) => { /* ... (fungsi renderList tetap sama) ... */ };
-  const reRenderAll = () => { /* ... (fungsi reRenderAll tetap sama) ... */ };
+  const renderList = (list, containerId, type) => {
+    const ul = div.querySelector(containerId);
+    ul.innerHTML = "";
+    list.forEach(item => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="item-info">
+          <strong>${item.nama}</strong> - <span>Rp ${Number(item.harga).toLocaleString('id-ID')}</span>
+          <p>${item.deskripsi || 'Tidak ada deskripsi'}</p>
+        </div>
+        <div class="actions">
+          <button data-id="${item.id}" data-type="${type}" data-action="edit">Edit</button>
+          <button data-id="${item.id}" data-type="${type}" data-action="delete" class="delete-btn">Hapus</button>
+        </div>
+      `;
+      ul.appendChild(li);
+    });
+  };
 
+  const reRenderAll = () => {
+    renderList(destinasiList, "#daftarDestinasi", "destinasi");
+    renderList(paketList, "#daftarPaket", "paket");
+  };
+  
   const renderTransaksi = () => {
     const tbody = div.querySelector("#transaksiBody");
     tbody.innerHTML = "";
@@ -86,7 +110,7 @@ export default function AdminPage() {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${trx.id_transaksi}</td>
-        <td>${trx.nama_pemesan}</td>
+        <td>${trx.nama_pemesan || 'N/A'}</td>
         <td>${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID')}</td>
         <td>${trx.jumlah}</td>
         <td>Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
@@ -127,25 +151,104 @@ export default function AdminPage() {
 
   // --- Event Listeners ---
   const setupEventListeners = () => {
-    // ... (listener untuk form dan CRUD item tetap sama) ...
+    const handleFormSubmit = async (e, type) => {
+      e.preventDefault();
+      const form = e.target;
+      const nama = form.nama.value.trim();
+      const deskripsi = form.deskripsi.value.trim();
+      const harga = parseInt(form.harga.value);
+      if (!nama || isNaN(harga) || harga < 0) {
+        alert('Nama dan Harga harus diisi dengan benar.');
+        return;
+      }
+      try {
+        const response = await fetch('/.netlify/functions/add-item', {
+          method: 'POST',
+          body: JSON.stringify({ type, nama, deskripsi, harga })
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || `Gagal menambah ${type}`);
+        }
+        const newItem = await response.json();
+        
+        if (type === 'destinasi') destinasiList.push(newItem);
+        else paketList.push(newItem);
+        
+        reRenderAll();
+        form.reset();
+      } catch (error) {
+        alert(error.message);
+      }
+    };
+
+    div.querySelector("#formDestinasi").addEventListener("submit", (e) => handleFormSubmit(e, 'destinasi'));
+    div.querySelector("#formPaket").addEventListener("submit", (e) => handleFormSubmit(e, 'paket'));
     
-    // Listener untuk mengubah status transaksi
+    div.addEventListener('click', async (e) => {
+      const { id, type, action } = e.target.dataset;
+      if (!id || !type || !action) return;
+
+      if (action === 'delete') {
+        if (!confirm('Apakah Anda yakin ingin menghapus item ini?')) return;
+        try {
+          const response = await fetch(`/.netlify/functions/delete-item?type=${type}&id=${id}`, { method: 'DELETE' });
+          if (!response.ok) throw new Error('Gagal menghapus item');
+          
+          if (type === 'destinasi') destinasiList = destinasiList.filter(item => item.id != id);
+          if (type === 'paket') paketList = paketList.filter(item => item.id != id);
+          reRenderAll();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+
+      if (action === 'edit') {
+        const list = type === 'destinasi' ? destinasiList : paketList;
+        const item = list.find(i => i.id == id);
+        
+        const newName = prompt('Masukkan nama baru:', item.nama);
+        const newDesc = prompt('Masukkan deskripsi baru:', item.deskripsi || '');
+        const newHarga = prompt('Masukkan harga baru:', item.harga);
+
+        if (newName === null || newDesc === null || newHarga === null) return;
+        const hargaInt = parseInt(newHarga);
+        if (!newName.trim() || isNaN(hargaInt) || hargaInt < 0) {
+          alert('Input tidak valid');
+          return;
+        }
+        try {
+          const response = await fetch('/.netlify/functions/update-item', {
+            method: 'PUT',
+            body: JSON.stringify({ type, id, nama: newName.trim(), deskripsi: newDesc.trim(), harga: hargaInt })
+          });
+          if (!response.ok) throw new Error('Gagal mengupdate item');
+          const updatedItem = await response.json();
+          
+          const index = list.findIndex(i => i.id == id);
+          list[index] = updatedItem;
+          reRenderAll();
+        } catch(error) {
+          alert(error.message);
+        }
+      }
+    });
+
     div.querySelector("#transaksiTable").addEventListener('change', async (e) => {
         if (e.target.classList.contains('status-select')) {
             const id = e.target.dataset.id;
             const status = e.target.value;
             
-            e.target.disabled = true; // Nonaktifkan sementara
+            e.target.disabled = true;
             try {
                 const response = await fetch('/.netlify/functions/update-transaction-status', {
                     method: 'PUT',
                     body: JSON.stringify({ id, status })
                 });
                 if (!response.ok) throw new Error('Gagal mengupdate status');
-                // Status berhasil diupdate di server
             } catch (error) {
                 alert(error.message);
-                e.target.value = transaksiList.find(t => t.id_transaksi == id).status; // Kembalikan ke nilai semula jika gagal
+                e.target.value = transaksiList.find(t => t.id_transaksi == id).status;
             } finally {
                 e.target.disabled = false;
             }
