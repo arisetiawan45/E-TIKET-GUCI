@@ -35,11 +35,21 @@ export default function Transaksi() {
     const tbody = div.querySelector("#transaksiBody");
 
     try {
-      // Panggil fungsi Netlify yang baru
-      const response = await fetch('/.netlify/functions/get-user-transactions');
+      // --- PERBAIKAN DI SINI ---
+      const user = netlifyIdentity.currentUser();
+      if (!user || !user.token) {
+          throw new Error('Anda harus login untuk melihat riwayat transaksi.');
+      }
+
+      // Siapkan header dengan token otorisasi
+      const headers = {
+          'Authorization': `Bearer ${user.token.access_token}`
+      };
+
+      // Panggil fungsi Netlify yang baru dengan menyertakan header
+      const response = await fetch('/.netlify/functions/get-user-transactions', { headers });
       
       if (!response.ok) {
-        if (response.status === 401) throw new Error('Anda harus login untuk melihat riwayat transaksi.');
         const errorData = await response.json();
         throw new Error(errorData.error || 'Gagal memuat data.');
       }

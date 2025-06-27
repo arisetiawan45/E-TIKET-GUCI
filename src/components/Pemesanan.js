@@ -1,6 +1,5 @@
 // components/Pemesanan.js
 
-// Parameter disesuaikan menjadi navigateToTransaksi untuk navigasi setelah sukses
 export default function Pemesanan(navigateToTransaksi) {
   const div = document.createElement("div");
   div.className = "pemesanan-container";
@@ -15,7 +14,6 @@ export default function Pemesanan(navigateToTransaksi) {
   // Gunakan IIFE (Immediately Invoked Function Expression) async untuk memuat data
   (async () => {
     try {
-      // 1. Ambil data dari Netlify Function
       const response = await fetch('/.netlify/functions/get-initial-data');
       if (!response.ok) {
         const errorData = await response.json();
@@ -23,7 +21,6 @@ export default function Pemesanan(navigateToTransaksi) {
       }
       const initialData = await response.json();
 
-      // Olah data yang diterima dari Neon DB
       const destinasiList = initialData.destinasi;
       const paketList = initialData.paket;
       
@@ -31,7 +28,6 @@ export default function Pemesanan(navigateToTransaksi) {
       destinasiList.forEach(item => { hargaList[item.nama] = item.harga; });
       paketList.forEach(item => { hargaList[item.nama] = item.harga; });
       
-      // Setelah data diterima, bangun sisa form
       const form = div.querySelector("#formPemesanan");
       const today = new Date().toISOString().split("T")[0];
       form.innerHTML = `
@@ -69,11 +65,9 @@ export default function Pemesanan(navigateToTransaksi) {
       messageDiv.style.cssText = "margin-top: 15px; font-weight: bold; color: red;";
       form.insertAdjacentElement('afterend', messageDiv);
       
-      // Sembunyikan pesan loading dan tampilkan form
       div.querySelector("#loadingMessage").style.display = 'none';
       form.style.display = 'block';
 
-      // Elemen
       const jenisTiket = div.querySelector("#jenisTiket");
       const destinasiSelect = div.querySelector("#destinasiSelect");
       const paketSelect = div.querySelector("#paketSelect");
@@ -95,7 +89,6 @@ export default function Pemesanan(navigateToTransaksi) {
         paketSelect.appendChild(option);
       });
 
-      // Logika untuk menghitung total harga
       function updateHarga() {
         const jumlah = parseInt(jumlahInput.value) || 0;
         const isPaket = jenisTiket.value === "paket";
@@ -105,7 +98,6 @@ export default function Pemesanan(navigateToTransaksi) {
         totalHargaSpan.textContent = `Rp ${total.toLocaleString("id-ID")}`;
       }
       
-      // Event listeners untuk update harga otomatis
       jenisTiket.addEventListener("change", () => {
         const isPaket = jenisTiket.value === "paket";
         div.querySelector("#paketWrapper").style.display = isPaket ? "block" : "none";
@@ -117,18 +109,30 @@ export default function Pemesanan(navigateToTransaksi) {
       destinasiSelect.addEventListener("change", updateHarga);
       paketSelect.addEventListener("change", updateHarga);
 
-      // Logika untuk submit form
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         submitButton.disabled = true;
         submitButton.textContent = "Memproses...";
         messageDiv.textContent = "";
 
+        // PERBAIKAN: Mendapatkan token otorisasi dari pengguna yang login
+        const user = netlifyIdentity.currentUser();
+        if (!user || !user.token) {
+            messageDiv.textContent = 'Error: Anda harus login untuk melanjutkan.';
+            submitButton.disabled = false;
+            submitButton.textContent = "Lanjut Transaksi";
+            return;
+        }
+
+        const headers = {
+            'Authorization': `Bearer ${user.token.access_token}`,
+            'Content-Type': 'application/json'
+        };
+
         const isPaket = jenisTiket.value === "paket";
         const jumlah = parseInt(jumlahInput.value);
         const hargaSatuan = hargaList[isPaket ? paketSelect.value : destinasiSelect.value] || 0;
 
-        // Menyesuaikan properti objek data dengan yang diharapkan backend
         const data = {
           nama_pemesan: form.nama.value,
           tanggal_kunjungan: form.tanggal.value,
@@ -138,21 +142,19 @@ export default function Pemesanan(navigateToTransaksi) {
         };
         
         try {
-          // PERBAIKAN: Endpoint disesuaikan menjadi 'create-transaction'
           const saveResponse = await fetch('/.netlify/functions/create-transaction', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers, // Menggunakan header yang sudah disiapkan
             body: JSON.stringify(data),
           });
 
           if (!saveResponse.ok) {
             const errorData = await saveResponse.json();
-            throw new Error(errorData.details || errorData.error || 'Gagal menyimpan transaksi ke server.');
+            throw new Error(errorData.details || errorData.error || 'Gagal menyimpan transaksi.');
           }
 
           console.log('Transaksi berhasil disimpan!');
 
-          // Memanggil fungsi navigasi yang benar
           if (navigateToTransaksi) navigateToTransaksi();
 
         } catch (error) {
@@ -163,11 +165,9 @@ export default function Pemesanan(navigateToTransaksi) {
         }
       });
 
-      // Panggil updateHarga untuk pertama kali
       updateHarga();
 
     } catch (error) {
-      // Tangani error jika gagal memuat data awal
       div.querySelector("#loadingMessage").textContent = `Error: ${error.message}`;
       div.querySelector("#loadingMessage").style.color = 'red';
     }
