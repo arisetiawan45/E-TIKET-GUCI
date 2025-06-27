@@ -1,78 +1,51 @@
-const postgres = require('postgres');
+const postgres_create = require('postgres');
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
   
-  const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
+  // Dapatkan informasi pengguna yang sedang login
+  const { user } = context.clientContext;
+  if (!user) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Anda harus login untuk membuat pesanan.' }) };
+  }
+
+  const sql = postgres_create(process.env.NEON_DATABASE_URL, { ssl: 'require' });
 
   try {
     const dataFromFrontend = JSON.parse(event.body);
-    console.log('Menerima data dari frontend:', dataFromFrontend);
-
-    const {
-      nama_pemesan,
-      tanggal_kunjungan,
-      jenis_tiket,
-      jumlah_tiket,
-      total_harga
-    } = dataFromFrontend;
+    const { nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah_tiket, total_harga } = dataFromFrontend;
 
     if (!nama_pemesan || !tanggal_kunjungan || !jenis_tiket || !jumlah_tiket || total_harga === undefined) {
-      console.error('Validasi gagal: Data tidak lengkap.', dataFromFrontend);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Data yang dikirim tidak lengkap.' }),
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: 'Data yang dikirim tidak lengkap.' }) };
     }
 
-    // Menggunakan transaksi database untuk keamanan data
     const result = await sql.begin(async sql => {
-      console.log('Memulai transaksi database...');
-      
-      console.log('Menjalankan INSERT ke tabel pemesanan...');
+      // Langkah 1: Masukkan data pemesanan DAN ID pengguna
       const [pemesanan] = await sql`
-        INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, id_destinasi, id_paket)
-        VALUES (${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, NULL, NULL)
+        INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, user_id)
+        VALUES (${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, ${user.sub})
         RETURNING id_pemesanan;
       `;
-      console.log('Sukses INSERT ke pemesanan. ID baru:', pemesanan.id_pemesanan);
       
-      console.log('Menjalankan INSERT ke tabel transaksi...');
+      // Langkah 2: Buat entri transaksi yang merujuk pada pemesanan
       const [transaksi] = await sql`
-        INSERT INTO transaksi (id_pemesanan)
-        VALUES (${pemesanan.id_pemesanan})
+        INSERT INTO transaksi (id_pemesanan) VALUES (${pemesanan.id_pemesanan})
         RETURNING id_transaksi, status;
       `;
-      console.log('Sukses INSERT ke transaksi. ID baru:', transaksi.id_transaksi);
       
       return transaksi;
     });
-    
-    console.log('Transaksi database berhasil di-commit.');
       
     return {
       statusCode: 201,
-      body: JSON.stringify({
-        message: "Transaksi dan pemesanan berhasil dibuat",
-        data: result
-      }),
+      body: JSON.stringify({ message: "Transaksi berhasil dibuat", data: result }),
     };
 
   } catch (error) {
-    // Logging yang lebih detail untuk debugging
-    console.error("!!! ERROR SAAT MEMBUAT TRANSAKSI !!!", {
-      errorMessage: error.message,
-      errorStack: error.stack,
-      requestBody: event.body,
-    });
-    return { 
-        statusCode: 500, 
-        body: JSON.stringify({ 
-            error: 'Gagal menyimpan transaksi ke database.',
-            details: error.message // Memberikan detail error ke client
-        }) 
-    };
+    console.error("Error saat membuat transaksi:", error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Gagal menyimpan transaksi.' }) };
   }
 };
+
