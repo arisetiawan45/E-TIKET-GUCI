@@ -40,7 +40,7 @@ export const handler = async (event) => {
 
       // Langkah 1: Masukkan data ke dalam tabel 'pemesanan'
       const pemesananQuery = `
-        INSERT INTO pemesanan (nama, tanggal_kunjungan, jenis_tiket, jumlah, total, destinasi_id, paket_id)
+        INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, destinasi_id, paket_id)
         VALUES ($1, $2, $3, $4, $5, NULL, NULL)
         RETURNING id_pemesanan;
       `;

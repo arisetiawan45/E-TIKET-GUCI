@@ -10,7 +10,7 @@ exports.handler = async () => {
       await sql`
         SELECT 
           t.id_transaksi, 
-          p.nama as nama_pemesan,
+          p.nama_pemesan,
           p.tanggal_kunjungan,
           p.jenis_tiket,
           p.jumlah,
