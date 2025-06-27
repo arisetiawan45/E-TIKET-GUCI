@@ -111,11 +111,19 @@ export default function Pemesanan(navigateToTransaksi) {
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        
+        // --- PENAMBAHAN: Validasi Client-side ---
+        const namaPemesan = form.namaPemesan.value.trim();
+        const tanggalKunjungan = form.tanggal.value;
+        if (!namaPemesan || !tanggalKunjungan) {
+            messageDiv.textContent = "Error: Nama pemesan dan tanggal kunjungan wajib diisi.";
+            return;
+        }
+
         submitButton.disabled = true;
         submitButton.textContent = "Memproses...";
         messageDiv.textContent = "";
 
-        // Mendapatkan token otorisasi dari pengguna yang login
         const user = netlifyIdentity.currentUser();
         if (!user || !user.token) {
             messageDiv.textContent = 'Error: Anda harus login untuk melanjutkan.';
@@ -133,36 +141,42 @@ export default function Pemesanan(navigateToTransaksi) {
         const jumlah = parseInt(jumlahInput.value);
         const hargaSatuan = hargaList[isPaket ? paketSelect.value : destinasiSelect.value] || 0;
 
-        // PENYESUAIAN: Pastikan nama properti di objek 'data'
-        // sama persis dengan yang diharapkan oleh fungsi backend.
         const data = {
-          nama_pemesan: form.namaPemesan.value, // Diubah agar lebih eksplisit
-          tanggal_kunjungan: form.tanggal.value,
+          nama_pemesan: namaPemesan, // Menggunakan variabel yang sudah divalidasi
+          tanggal_kunjungan: tanggalKunjungan,
           jenis_tiket: jenisTiket.value,
           jumlah_tiket: jumlah,
           total_harga: jumlah * hargaSatuan,
         };
         
         try {
-          // Endpoint sudah benar menunjuk ke fungsi yang menangani pemesanan dan transaksi
           const saveResponse = await fetch('/.netlify/functions/create-transaction', {
             method: 'POST',
-            headers: headers, // Menggunakan header yang sudah disiapkan
+            headers: headers,
             body: JSON.stringify(data),
           });
 
+          // --- PENAMBAHAN: Penanganan Error yang Lebih Detail ---
           if (!saveResponse.ok) {
-            const errorData = await saveResponse.json();
-            throw new Error(errorData.details || errorData.error || 'Gagal menyimpan transaksi.');
+            let errorMsg = 'Gagal menyimpan transaksi.';
+            try {
+              // Coba dapatkan pesan error spesifik dari backend
+              const errorData = await saveResponse.json();
+              errorMsg = `Error dari server: ${errorData.details || errorData.error || 'Terjadi kesalahan tidak diketahui.'}`;
+            } catch (parseError) {
+              // Jika backend tidak mengirim JSON (misalnya error 502 atau timeout)
+              errorMsg = `Gagal menyimpan transaksi. Status: ${saveResponse.status} ${saveResponse.statusText}`;
+            }
+            throw new Error(errorMsg);
           }
 
           console.log('Transaksi berhasil disimpan!');
-
-          // Panggil fungsi navigasi untuk pindah halaman
           if (navigateToTransaksi) navigateToTransaksi();
 
         } catch (error) {
+          // Menampilkan pesan error yang lebih informatif kepada pengguna
           messageDiv.textContent = error.message;
+          console.error("Detail error saat submit:", error); // Juga log ke console untuk debugging
         } finally {
           submitButton.disabled = false;
           submitButton.textContent = "Lanjut Transaksi";
