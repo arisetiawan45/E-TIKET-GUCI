@@ -1,3 +1,4 @@
+// File: netlify/functions/get-user-transactions.js
 const postgres = require('postgres');
 
 exports.handler = async (event, context) => {
@@ -20,11 +21,12 @@ exports.handler = async (event, context) => {
         p.tanggal_kunjungan,
         p.jumlah,
         p.total,
-        t.status
+        t.status,
+        p.tanggal_transaksi
       FROM transaksi t
       INNER JOIN pemesanan p ON t.id_pemesanan = p.id_pemesanan
-      WHERE p.id_user = ${userId}
-      ORDER BY p.tanggal_kunjungan DESC
+      WHERE p.id_user = ${userId} -- Menggunakan kolom id_user yang benar
+      ORDER BY p.tanggal_transaksi DESC
     `;
 
     return {

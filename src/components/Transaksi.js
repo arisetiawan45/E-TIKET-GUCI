@@ -1,4 +1,4 @@
-// components/Transaksi.js
+/ components/Transaksi.js
 
 export default function Transaksi() {
   const div = document.createElement("div");
@@ -18,9 +18,10 @@ export default function Transaksi() {
             <th>ID Transaksi</th>
             <th>Nama Pemesan</th>
             <th>Tanggal Kunjungan</th>
-            <th>Jumlah Tiket</th>
+            <th>Waktu Transaksi</th>
+            <th>Jumlah</th>
             <th>Total Harga</th>
-            <th>Status Pembayaran</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody id="transaksiBody"></tbody>
@@ -35,18 +36,11 @@ export default function Transaksi() {
     const tbody = div.querySelector("#transaksiBody");
 
     try {
-      // --- PERBAIKAN DI SINI ---
       const user = netlifyIdentity.currentUser();
       if (!user || !user.token) {
           throw new Error('Anda harus login untuk melihat riwayat transaksi.');
       }
-
-      // Siapkan header dengan token otorisasi
-      const headers = {
-          'Authorization': `Bearer ${user.token.access_token}`
-      };
-
-      // Panggil fungsi Netlify yang baru dengan menyertakan header
+      const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
       const response = await fetch('/.netlify/functions/get-user-transactions', { headers });
       
       if (!response.ok) {
@@ -56,22 +50,31 @@ export default function Transaksi() {
       
       const transactions = await response.json();
 
-      // Sembunyikan pesan loading dan tampilkan tabel
       loadingMessage.style.display = 'none';
       table.style.display = 'table';
 
       if (transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Anda belum memiliki riwayat transaksi.</td></tr>';
+        // PERBAIKAN: Colspan disesuaikan menjadi 7
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Anda belum memiliki riwayat transaksi.</td></tr>';
         return;
       }
 
       // Render setiap baris transaksi
       transactions.forEach(trx => {
         const tr = document.createElement("tr");
+        
+        // Opsi format tanggal agar lebih mudah dibaca
+        const options = {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+            timeZone: 'Asia/Jakarta' // Tampilkan dalam zona waktu WIB
+        };
+
         tr.innerHTML = `
           <td>TRX-${trx.id_transaksi}</td>
           <td>${trx.nama_pemesan}</td>
-          <td>${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID')}</td>
+          <td>${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'})}</td>
+          <td>${new Date(trx.tanggal_transaksi).toLocaleString('id-ID', options)}</td>
           <td>${trx.jumlah}</td>
           <td>Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
           <td>${trx.status}</td>
