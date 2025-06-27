@@ -1,8 +1,8 @@
-const postgres_trans_status = require('postgres');
+const postgres = require('postgres');
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'PUT') return { statusCode: 405, body: 'Method Not Allowed' };
-    const sql = postgres_trans_status(process.env.NEON_DATABASE_URL, { ssl: 'require' });
+    const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
     try {
         const { id, status } = JSON.parse(event.body);
         if (!id || !status || !['Pending', 'Dibayar'].includes(status)) {

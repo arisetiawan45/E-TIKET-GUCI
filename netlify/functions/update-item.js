@@ -1,8 +1,8 @@
-const postgres_update = require('postgres');
+const postgres = require('postgres');
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'PUT') return { statusCode: 405, body: 'Method Not Allowed' };
-    const sql = postgres_update(process.env.NEON_DATABASE_URL, { ssl: 'require' });
+    const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
     try {
         const { type, id, nama, deskripsi, harga } = JSON.parse(event.body);
         let query;

@@ -1,3 +1,5 @@
+// components/Pemesanan.js
+
 // Parameter disesuaikan menjadi navigateToTransaksi untuk navigasi setelah sukses
 export default function Pemesanan(navigateToTransaksi) {
   const div = document.createElement("div");
@@ -126,9 +128,9 @@ export default function Pemesanan(navigateToTransaksi) {
         const jumlah = parseInt(jumlahInput.value);
         const hargaSatuan = hargaList[isPaket ? paketSelect.value : destinasiSelect.value] || 0;
 
-        // PERBAIKAN: Menyesuaikan properti objek data dengan yang diharapkan backend
+        // Menyesuaikan properti objek data dengan yang diharapkan backend
         const data = {
-          nama_pemesan: form.nama.value, // Diubah dari 'nama' menjadi 'nama_pemesan'
+          nama_pemesan: form.nama.value,
           tanggal_kunjungan: form.tanggal.value,
           jenis_tiket: jenisTiket.value,
           jumlah_tiket: jumlah,
@@ -145,12 +147,12 @@ export default function Pemesanan(navigateToTransaksi) {
 
           if (!saveResponse.ok) {
             const errorData = await saveResponse.json();
-            throw new Error(errorData.error || 'Gagal menyimpan transaksi ke server.');
+            throw new Error(errorData.details || errorData.error || 'Gagal menyimpan transaksi ke server.');
           }
 
           console.log('Transaksi berhasil disimpan!');
 
-          // PERBAIKAN: Memanggil fungsi navigasi yang benar
+          // Memanggil fungsi navigasi yang benar
           if (navigateToTransaksi) navigateToTransaksi();
 
         } catch (error) {

@@ -1,8 +1,8 @@
-const postgres_delete = require('postgres');
+const postgres = require('postgres');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'DELETE') return { statusCode: 405, body: 'Method Not Allowed' };
-  const sql = postgres_delete(process.env.NEON_DATABASE_URL, { ssl: 'require' });
+  const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
   try {
     const { type, id } = event.queryStringParameters;
     let query;

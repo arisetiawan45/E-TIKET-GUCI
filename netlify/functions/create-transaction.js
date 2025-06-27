@@ -1,11 +1,11 @@
-const postgres_create_trans = require('postgres'); // Nama variabel unik
+const postgres = require('postgres');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
   
-  const sql = postgres_create_trans(process.env.NEON_DATABASE_URL, { ssl: 'require' });
+  const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
 
   try {
     const dataFromFrontend = JSON.parse(event.body);
@@ -29,20 +29,28 @@ exports.handler = async (event) => {
 
     // Menggunakan transaksi database untuk keamanan data
     const result = await sql.begin(async sql => {
+      console.log('Memulai transaksi database...');
+      
+      console.log('Menjalankan INSERT ke tabel pemesanan...');
       const [pemesanan] = await sql`
         INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, destinasi_id, paket_id)
         VALUES (${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, NULL, NULL)
         RETURNING id_pemesanan;
       `;
+      console.log('Sukses INSERT ke pemesanan. ID baru:', pemesanan.id_pemesanan);
       
+      console.log('Menjalankan INSERT ke tabel transaksi...');
       const [transaksi] = await sql`
         INSERT INTO transaksi (id_pemesanan)
         VALUES (${pemesanan.id_pemesanan})
         RETURNING id_transaksi, status;
       `;
+      console.log('Sukses INSERT ke transaksi. ID baru:', transaksi.id_transaksi);
       
       return transaksi;
     });
+    
+    console.log('Transaksi database berhasil di-commit.');
       
     return {
       statusCode: 201,
