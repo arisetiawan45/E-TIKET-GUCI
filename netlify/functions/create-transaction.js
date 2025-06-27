@@ -33,7 +33,7 @@ exports.handler = async (event) => {
       
       console.log('Menjalankan INSERT ke tabel pemesanan...');
       const [pemesanan] = await sql`
-        INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, destinasi_id, paket_id)
+        INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, id_destinasi, paket_id)
         VALUES (${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, NULL, NULL)
         RETURNING id_pemesanan;
       `;
