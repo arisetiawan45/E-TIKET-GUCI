@@ -32,7 +32,7 @@ export default function Pemesanan(navigateToTransaksi) {
       const today = new Date().toISOString().split("T")[0];
       form.innerHTML = `
         <label for="namaPemesan">Nama Pemesan:</label><br>
-        <input type="text" id="namaPemesan" name="nama" placeholder="Masukkan nama lengkap Anda" required><br><br>
+        <input type="text" id="namaPemesan" name="namaPemesan" placeholder="Masukkan nama lengkap Anda" required><br><br>
 
         <label for="tanggal">Tanggal Kunjungan:</label><br>
         <input type="date" id="tanggal" name="tanggal" min="${today}" required><br><br>
@@ -115,7 +115,7 @@ export default function Pemesanan(navigateToTransaksi) {
         submitButton.textContent = "Memproses...";
         messageDiv.textContent = "";
 
-        // PERBAIKAN: Mendapatkan token otorisasi dari pengguna yang login
+        // Mendapatkan token otorisasi dari pengguna yang login
         const user = netlifyIdentity.currentUser();
         if (!user || !user.token) {
             messageDiv.textContent = 'Error: Anda harus login untuk melanjutkan.';
@@ -133,8 +133,10 @@ export default function Pemesanan(navigateToTransaksi) {
         const jumlah = parseInt(jumlahInput.value);
         const hargaSatuan = hargaList[isPaket ? paketSelect.value : destinasiSelect.value] || 0;
 
+        // PENYESUAIAN: Pastikan nama properti di objek 'data'
+        // sama persis dengan yang diharapkan oleh fungsi backend.
         const data = {
-          nama_pemesan: form.nama.value,
+          nama_pemesan: form.namaPemesan.value, // Diubah agar lebih eksplisit
           tanggal_kunjungan: form.tanggal.value,
           jenis_tiket: jenisTiket.value,
           jumlah_tiket: jumlah,
@@ -142,6 +144,7 @@ export default function Pemesanan(navigateToTransaksi) {
         };
         
         try {
+          // Endpoint sudah benar menunjuk ke fungsi yang menangani pemesanan dan transaksi
           const saveResponse = await fetch('/.netlify/functions/create-transaction', {
             method: 'POST',
             headers: headers, // Menggunakan header yang sudah disiapkan
@@ -155,6 +158,7 @@ export default function Pemesanan(navigateToTransaksi) {
 
           console.log('Transaksi berhasil disimpan!');
 
+          // Panggil fungsi navigasi untuk pindah halaman
           if (navigateToTransaksi) navigateToTransaksi();
 
         } catch (error) {
