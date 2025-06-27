@@ -44,7 +44,7 @@ exports.handler = async (event, context) => {
       const [pemesanan] = await sql`
         INSERT INTO pemesanan (
           nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, id_user, 
-          destinasi_id, id_paket, tanggal_transaksi
+          id_destinasi, id_paket, tanggal_transaksi
         )
         VALUES (
           ${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, ${user.sub}, 
