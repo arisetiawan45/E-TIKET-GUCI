@@ -1,6 +1,4 @@
-// components/Pemesanan.js
-
-// Parameter disesuaikan menjadi navigateToTransaksi
+// Parameter disesuaikan menjadi navigateToTransaksi untuk navigasi setelah sukses
 export default function Pemesanan(navigateToTransaksi) {
   const div = document.createElement("div");
   div.className = "pemesanan-container";
@@ -34,7 +32,6 @@ export default function Pemesanan(navigateToTransaksi) {
       // Setelah data diterima, bangun sisa form
       const form = div.querySelector("#formPemesanan");
       const today = new Date().toISOString().split("T")[0];
-      // PENAMBAHAN: Input untuk Nama Pemesan
       form.innerHTML = `
         <label for="namaPemesan">Nama Pemesan:</label><br>
         <input type="text" id="namaPemesan" name="nama" placeholder="Masukkan nama lengkap Anda" required><br><br>
@@ -127,22 +124,20 @@ export default function Pemesanan(navigateToTransaksi) {
 
         const isPaket = jenisTiket.value === "paket";
         const jumlah = parseInt(jumlahInput.value);
-        const namaDipilih = isPaket ? paketSelect.value : destinasiSelect.value;
-        const hargaSatuan = hargaList[namaDipilih] || 0;
+        const hargaSatuan = hargaList[isPaket ? paketSelect.value : destinasiSelect.value] || 0;
 
-        // PENAMBAHAN: Data nama pemesan diambil dari form
+        // PERBAIKAN: Menyesuaikan properti objek data dengan yang diharapkan backend
         const data = {
-          nama: form.nama.value, // Mengambil nilai dari input nama
+          nama_pemesan: form.nama.value, // Diubah dari 'nama' menjadi 'nama_pemesan'
           tanggal_kunjungan: form.tanggal.value,
           jenis_tiket: jenisTiket.value,
-          nama_item: namaDipilih,
           jumlah_tiket: jumlah,
           total_harga: jumlah * hargaSatuan,
         };
         
         try {
-          // Endpoint disesuaikan dengan nama fungsi yang relevan
-          const saveResponse = await fetch('/.netlify/functions/create-pemesanan', {
+          // PERBAIKAN: Endpoint disesuaikan menjadi 'create-transaction'
+          const saveResponse = await fetch('/.netlify/functions/create-transaction', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -155,7 +150,7 @@ export default function Pemesanan(navigateToTransaksi) {
 
           console.log('Transaksi berhasil disimpan!');
 
-          // Panggil fungsi navigasi yang diberikan oleh DashboardPage untuk pindah halaman
+          // PERBAIKAN: Memanggil fungsi navigasi yang benar
           if (navigateToTransaksi) navigateToTransaksi();
 
         } catch (error) {
