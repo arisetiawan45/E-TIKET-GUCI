@@ -40,9 +40,16 @@ exports.handler = async (event, context) => {
       console.log('Memulai transaksi database...');
       
       console.log('Menjalankan INSERT ke tabel pemesanan...');
+      // PERBAIKAN: Menambahkan tanggal_transaksi dengan zona waktu yang benar
       const [pemesanan] = await sql`
-        INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, id_user, id_destinasi, id_paket)
-        VALUES (${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, ${user.sub}, NULL, NULL)
+        INSERT INTO pemesanan (
+          nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, id_user, 
+          destinasi_id, id_paket, tanggal_transaksi
+        )
+        VALUES (
+          ${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, ${user.sub}, 
+          NULL, NULL, NOW() AT TIME ZONE 'Asia/Jakarta'
+        )
         RETURNING id_pemesanan;
       `;
       console.log('Sukses INSERT ke pemesanan. ID baru:', pemesanan.id_pemesanan);
