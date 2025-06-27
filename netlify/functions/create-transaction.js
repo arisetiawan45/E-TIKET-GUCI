@@ -1,21 +1,22 @@
 // File: netlify/functions/create-transaction.js
-// Fungsi ini sekarang menangani pembuatan 'pemesanan' dan 'transaksi' sekaligus.
-import { Pool } from '@neondatabase/serverless';
+// Fungsi ini menangani pembuatan 'pemesanan' dan 'transaksi' sekaligus.
+// Pastikan frontend memanggil endpoint ini.
+const postgres = require('postgres');
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   // Hanya izinkan metode POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  let pool;
+  const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
 
   try {
     const dataFromFrontend = JSON.parse(event.body);
     console.log('Menerima data dari frontend:', JSON.stringify(dataFromFrontend, null, 2));
 
     const {
-      nama,
+      nama_pemesan, // Mengambil nama pemesan dari data frontend
       tanggal_kunjungan,
       jenis_tiket,
       jumlah_tiket,
@@ -23,63 +24,45 @@ export const handler = async (event) => {
     } = dataFromFrontend;
 
     // Validasi input
-    if (!nama || !tanggal_kunjungan || !jenis_tiket || !jumlah_tiket || total_harga === undefined) {
+    if (!nama_pemesan || !tanggal_kunjungan || !jenis_tiket || !jumlah_tiket || total_harga === undefined) {
       console.error('Validasi gagal: Data dari frontend tidak lengkap.');
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Data yang dikirim tidak lengkap.' }),
+        body: JSON.stringify({ error: 'Data yang dikirim tidak lengkap. Pastikan semua field terisi.' }),
       };
     }
 
-    pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL });
-    const client = await pool.connect();
-
-    try {
-      // Memulai transaksi database
-      await client.query('BEGIN');
-
+    // Memulai transaksi database untuk memastikan kedua insert berhasil atau gagal bersamaan
+    const result = await sql.begin(async sql => {
       // Langkah 1: Masukkan data ke dalam tabel 'pemesanan'
-      const pemesananQuery = `
+      // PERBAIKAN: Menambahkan kolom 'nama_pemesan'
+      const [pemesanan] = await sql`
         INSERT INTO pemesanan (nama_pemesan, tanggal_kunjungan, jenis_tiket, jumlah, total, destinasi_id, paket_id)
-        VALUES ($1, $2, $3, $4, $5, NULL, NULL)
+        VALUES (${nama_pemesan}, ${tanggal_kunjungan}, ${jenis_tiket}, ${jumlah_tiket}, ${total_harga}, NULL, NULL)
         RETURNING id_pemesanan;
       `;
-      const pemesananValues = [nama, tanggal_kunjungan, jenis_tiket, jumlah_tiket, total_harga];
-      const pemesananResult = await client.query(pemesananQuery, pemesananValues);
-      const newPemesananId = pemesananResult.rows[0].id_pemesanan;
-
-      console.log('Pemesanan berhasil dibuat dengan ID:', newPemesananId);
+      
+      console.log('Pemesanan berhasil dibuat dengan ID:', pemesanan.id_pemesanan);
 
       // Langkah 2: Masukkan referensi ke dalam tabel 'transaksi'
-      const transaksiQuery = `
+      const [transaksi] = await sql`
         INSERT INTO transaksi (id_pemesanan)
-        VALUES ($1)
+        VALUES (${pemesanan.id_pemesanan})
         RETURNING id_transaksi, status;
       `;
-      const transaksiResult = await client.query(transaksiQuery, [newPemesananId]);
       
-      // Menyelesaikan transaksi
-      await client.query('COMMIT');
-
-      console.log('Transaksi berhasil dibuat dengan ID:', transaksiResult.rows[0].id_transaksi);
+      console.log('Transaksi berhasil dibuat dengan ID:', transaksi.id_transaksi);
       
-      return {
-        statusCode: 201, // 201 Created
-        body: JSON.stringify({
-          message: "Transaksi dan pemesanan berhasil dibuat",
-          data: transaksiResult.rows[0]
-        }),
-      };
-
-    } catch (e) {
-      // Jika terjadi error, batalkan semua perubahan dalam transaksi
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      // Pastikan koneksi dilepaskan
-      client.release();
-      await pool.end();
-    }
+      return transaksi;
+    });
+      
+    return {
+      statusCode: 201, // 201 Created
+      body: JSON.stringify({
+        message: "Transaksi dan pemesanan berhasil dibuat",
+        data: result
+      }),
+    };
 
   } catch (error) {
     console.error("Error saat membuat transaksi:", error);
