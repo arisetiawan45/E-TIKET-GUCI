@@ -30,14 +30,11 @@ export default function AdminPage() {
       .admin-form button { padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; font-weight: 500;}
       .admin-list { list-style: none; padding: 0; }
       .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-      .admin-list li:last-child { border-bottom: none; }
       .admin-list .item-info p { margin: 4px 0 0 0; font-size: 0.85em; color: #666; }
-      .admin-list .actions button { margin-left: 8px; }
       .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
       
-      /* --- Media Query untuk HP --- */
       @media (max-width: 768px) {
-        .management-grid { grid-template-columns: 1fr; gap: 30px; }
+        .management-grid { grid-template-columns: 1fr; }
         .stats-container { flex-direction: column; gap: 10px; }
       }
     </style>
@@ -91,7 +88,6 @@ export default function AdminPage() {
   // --- State Aplikasi (disederhanakan) ---
   let destinasiList = [];
   let paketList = [];
-  // Logika transaksi (tabel, paginasi, sort) sekarang dipindahkan ke Transaksi.js
 
   // --- Fungsi Render ---
   const renderList = (list, containerId, type) => {
@@ -128,7 +124,6 @@ export default function AdminPage() {
       destinasiList = data.destinasi;
       paketList = data.paket;
       
-      // Update statistik
       div.querySelector("#totalTransaksi").textContent = data.transaksi.length;
       div.querySelector("#totalTiket").textContent = data.transaksi.reduce((sum, trx) => sum + (trx.jumlah || 0), 0);
 
@@ -233,7 +228,7 @@ export default function AdminPage() {
 
   // 3. Panggil dan tampilkan komponen Transaksi di dalam wrapper
   const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
-  transaksiWrapper.appendChild(Transaksi({ scope: 'all', adminFeatures: true }));
+  transaksiWrapper.appendChild(Transaksi({ scope: 'admin', adminFeatures: true }));
 
   return div;
 }

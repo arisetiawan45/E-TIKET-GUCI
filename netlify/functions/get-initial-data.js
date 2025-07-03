@@ -13,11 +13,11 @@ exports.handler = async (event, context) => {
     const [destinasi, paket] = await sql.begin(async sql => [
       
       // Mengambil data destinasi dan menggunakan alias agar konsisten
-      // PERBAIKAN: Menambahkan koma yang hilang setelah 'deskripsi'
+
       await sql`SELECT id_destinasi as id, nama, deskripsi, harga FROM destinasi ORDER BY nama ASC`,
       
       // Mengambil data paket dan menggunakan alias agar konsisten
-      // PERBAIKAN: Menambahkan koma yang hilang setelah 'deskripsi'
+
       await sql`SELECT id_paket as id, nama_paket as nama, deskripsi, harga_paket as harga FROM paket_wisata ORDER BY nama_paket ASC`,
     ]);
     

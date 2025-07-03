@@ -1,5 +1,5 @@
 // pages/PimpinanPage.js
-import Transaksi from '../components/Transaksi'; // Impor komponen Transaksi yang baru
+import Transaksi from '../components/Transaksi'; // Impor komponen Transaksi yang reusable
 
 export default function PimpinanPage() {
   const div = document.createElement("div");
@@ -17,7 +17,7 @@ export default function PimpinanPage() {
         margin-top: 0;
         font-size: 1.5rem;
       }
-      .stats-container { display: flex; gap: 40px; }
+      .stats-container { display: flex; flex-wrap: wrap; gap: 40px; }
       .stats-container p { font-size: 1.1rem; margin: 0; }
     </style>
     <section style="padding: 20px 0;">
@@ -39,12 +39,11 @@ export default function PimpinanPage() {
     </section>
   `;
 
-  // Fungsi untuk mengambil data statistik (lebih efisien)
+  // Fungsi untuk mengambil data statistik
   const fetchStats = async () => {
     const loadingMessage = div.querySelector("#loading-message");
     const pimpinanContent = div.querySelector("#pimpinan-content");
     try {
-      // Kita tetap memanggil get-admin-data karena ia sudah efisien
       const response = await fetch('/.netlify/functions/get-admin-data');
       if (!response.ok) throw new Error('Gagal mengambil data statistik');
       const data = await response.json();
@@ -64,8 +63,8 @@ export default function PimpinanPage() {
 
   // Panggil dan tampilkan komponen Transaksi
   const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
-  // Kita panggil dengan scope 'all' dan adminFeatures 'true'
-  transaksiWrapper.appendChild(Transaksi({ scope: 'all', adminFeatures: true }));
+  // Kita panggil dengan scope 'pimpinan' (atau 'all') dan adminFeatures 'true' untuk menampilkan semua fitur
+  transaksiWrapper.appendChild(Transaksi({ scope: 'pimpinan', adminFeatures: true }));
 
   // Ambil data statistik
   fetchStats();
