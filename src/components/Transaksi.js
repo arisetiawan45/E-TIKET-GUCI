@@ -2,8 +2,8 @@
 
 // Komponen ini sekarang memiliki fitur lengkap: sorting, paginasi, search, dan print.
 // Menerima 'props' untuk menentukan cakupan data (scope) dan apakah fitur admin harus aktif.
-export default function Transaksi(props = { scope: 'user', adminFeatures: false }) {
-  const { scope, adminFeatures } = props;
+export default function Transaksi(props = { scope: 'user', adminFeatures: false, initialData: null }) {
+  const { scope, adminFeatures, initialData } = props;
   const div = document.createElement("div");
 
   // State aplikasi untuk komponen ini
@@ -70,7 +70,72 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
   const contentDiv = div.querySelector("#transaksiContent");
   const tbody = div.querySelector("#transaksiBody");
 
-  const printPDF = () => { /* ... (Logika printPDF tetap sama) ... */ };
+  const printPDF = () => {
+    const printElement = document.createElement('div');
+    printElement.style.padding = '20px';
+    printElement.style.fontFamily = 'sans-serif';
+
+    const reportTitle = document.createElement('h2');
+    reportTitle.textContent = 'Laporan Riwayat Transaksi';
+    const reportDate = document.createElement('p');
+    reportDate.textContent = `Dicetak pada: ${new Date().toLocaleString('id-ID')}`;
+    reportDate.style.marginBottom = '20px';
+    printElement.appendChild(reportTitle);
+    printElement.appendChild(reportDate);
+
+    const printTable = document.createElement('table');
+    printTable.style.width = '100%';
+    printTable.style.borderCollapse = 'collapse';
+    printTable.innerHTML = `
+      <thead style="background-color: #f2f2f2;">
+        <tr>
+          <th style="border: 1px solid #ddd; padding: 8px;">ID</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Nama Pemesan</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Tgl Kunjungan</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Waktu Transaksi</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Jumlah</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    `;
+    const printTbody = printTable.querySelector('tbody');
+    
+    const sortedData = [...filteredTransactions].sort((a, b) => {
+        const valA = a[sortColumn]; const valB = b[sortColumn];
+        let comparison = 0;
+        if (valA > valB) comparison = 1; else if (valA < valB) comparison = -1;
+        return sortDirection === 'desc' ? comparison * -1 : comparison;
+    });
+
+    sortedData.forEach(trx => {
+        const tr = document.createElement('tr');
+        const waktuTransaksi = trx.tanggal_transaksi ? new Date(trx.tanggal_transaksi).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+        tr.innerHTML = `
+            <td style="border: 1px solid #ddd; padding: 8px;">${trx.id_transaksi}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${trx.nama_pemesan || 'N/A'}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID')}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${waktuTransaksi}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${trx.jumlah}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${trx.status}</td>
+        `;
+        printTbody.appendChild(tr);
+    });
+
+    printElement.appendChild(printTable);
+
+    const opt = {
+      margin:       0.5,
+      filename:     `laporan-transaksi.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+    };
+    html2pdf().from(printElement).set(opt).save();
+  };
 
   const renderTable = () => {
     filteredTransactions = transactions.filter(trx =>
@@ -95,29 +160,18 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
       tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Tidak ada data yang cocok.</td></tr>`;
     } else {
       pageData.forEach(trx => {
-        // --- PERBAIKAN UTAMA DI SINI ---
-        try {
-          const tr = document.createElement("tr");
-          
-          // Pengecekan data sebelum format
-          const tglKunjungan = trx.tanggal_kunjungan ? new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID') : 'N/A';
-          const waktuTransaksi = trx.tanggal_transaksi ? new Date(trx.tanggal_transaksi).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
-          const totalHarga = !isNaN(trx.total) ? `Rp ${Number(trx.total).toLocaleString('id-ID')}` : 'N/A';
-
-          tr.innerHTML = `
-            <td>${trx.id_transaksi || 'N/A'}</td>
-            <td>${trx.nama_pemesan || 'N/A'}</td>
-            <td>${tglKunjungan}</td>
-            <td>${waktuTransaksi}</td>
-            <td>${trx.jumlah || 0}</td>
-            <td>${totalHarga}</td>
-            <td>${trx.status || 'N/A'}</td>
-          `;
-          tbody.appendChild(tr);
-        } catch (e) {
-            // Jika terjadi error saat merender satu baris, log errornya dan lanjutkan ke baris berikutnya
-            console.error('Gagal merender baris transaksi:', trx, e);
-        }
+        const tr = document.createElement("tr");
+        const waktuTransaksi = trx.tanggal_transaksi ? new Date(trx.tanggal_transaksi).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+        tr.innerHTML = `
+          <td>${trx.id_transaksi}</td>
+          <td>${trx.nama_pemesan || 'N/A'}</td>
+          <td>${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID')}</td>
+          <td>${waktuTransaksi}</td>
+          <td>${trx.jumlah}</td>
+          <td>Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+          <td>${trx.status}</td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
@@ -133,20 +187,25 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
 
   const fetchData = async () => {
     try {
-      const user = netlifyIdentity.currentUser();
-      if (!user) throw new Error('Otorisasi gagal.');
+      if (initialData) {
+        transactions = initialData;
+      } else {
+        const user = netlifyIdentity.currentUser();
+        if (!user) throw new Error('Otorisasi gagal.');
 
-      const endpoint = scope === 'all' ? '/.netlify/functions/get-history-data?scope=all' : '/.netlify/functions/get-user-transactions';
-      const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
-      const response = await fetch(endpoint, { headers });
-      
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Gagal memuat data.');
+        // PERBAIKAN: Menggunakan endpoint baru 'get-history-data'
+        const endpoint = `/.netlify/functions/get-history-data?scope=${scope}`;
+        const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
+        const response = await fetch(endpoint, { headers });
+        
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Gagal memuat data.');
+        }
+        
+        const data = await response.json();
+        transactions = (scope === 'user') ? data : data.transaksi;
       }
-      
-      const data = await response.json();
-      transactions = scope === 'all' ? data.transaksi : data;
 
       loadingMessage.style.display = 'none';
       contentDiv.style.display = 'block';
@@ -157,7 +216,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
     }
   };
 
-  // Event listener untuk sorting
+  // Event Listeners
   div.querySelectorAll('#transaksiTable th[data-sort]').forEach(header => {
     header.addEventListener('click', () => {
       const newSortColumn = header.dataset.sort;
@@ -167,9 +226,33 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
         sortColumn = newSortColumn;
         sortDirection = 'asc';
       }
-      renderTable(); // Render ulang tabel dengan sort baru
+      currentPage = 1;
+      renderTable();
     });
   });
+
+  div.querySelector("#prevPageBtn").addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+    }
+  });
+  div.querySelector("#nextPageBtn").addEventListener('click', () => {
+    const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+    }
+  });
+
+  if (adminFeatures) {
+    div.querySelector('#searchInput').addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        currentPage = 1;
+        renderTable();
+    });
+    div.querySelector('#printPdfBtn').addEventListener('click', printPDF);
+  }
 
   fetchData();
   return div;

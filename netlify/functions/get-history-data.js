@@ -1,21 +1,24 @@
 // File: netlify/functions/get-history-data.js
-// Fungsi ini menjadi satu-satunya sumber untuk mengambil data terkait transaksi,
-// destinasi, dan paket, berdasarkan 'scope' yang diberikan.
+// Fungsi ini menjadi SATU-SATUNYA sumber untuk mengambil data.
 
 const postgres = require('postgres');
 
 exports.handler = async (event, context) => {
-  // Ambil 'scope' dari query string, default ke 'user' jika tidak ada
+  // Ambil 'scope' dari query string (misal: ?scope=user atau ?scope=admin)
   const scope = event.queryStringParameters.scope || 'user';
   const { user } = context.clientContext;
+  
+  // Semua panggilan memerlukan login, kecuali untuk data awal
+  if (scope !== 'initial' && !user) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Akses ditolak.' }) };
+  }
   
   const sql = postgres(process.env.NEON_DATABASE_URL, { ssl: 'require' });
 
   try {
-    // Logika berbeda berdasarkan scope
     switch (scope) {
       case 'initial':
-        // Hanya untuk form pemesanan, ambil destinasi dan paket
+        // Untuk form pemesanan
         const [destinasi, paket] = await sql.begin(async sql => [
           await sql`SELECT id_destinasi as id, nama, deskripsi, harga FROM destinasi ORDER BY nama ASC`,
           await sql`SELECT id_paket as id, nama_paket as nama, deskripsi, harga_paket as harga FROM paket_wisata ORDER BY nama_paket ASC`,
@@ -24,7 +27,6 @@ exports.handler = async (event, context) => {
 
       case 'user':
         // Untuk riwayat transaksi pengguna biasa
-        if (!user) return { statusCode: 401, body: JSON.stringify({ error: 'Akses ditolak.' }) };
         const userTransactions = await sql`
           SELECT t.id_transaksi, p.nama_pemesan, p.tanggal_kunjungan, p.jumlah, p.total, t.status, p.tanggal_transaksi 
           FROM transaksi t
@@ -36,11 +38,7 @@ exports.handler = async (event, context) => {
 
       case 'admin':
       case 'pimpinan':
-        // Untuk halaman Admin dan Pimpinan, ambil semua data
-        if (!user) return { statusCode: 401, body: JSON.stringify({ error: 'Akses ditolak.' }) };
-        // Anda bisa menambahkan pengecekan peran di sini jika perlu
-        // if (!user.app_metadata.roles.includes('admin')) { ... }
-        
+        // Untuk halaman Admin dan Pimpinan
         const [allDestinasi, allPaket, allTransaksi] = await sql.begin(async sql => [
             await sql`SELECT id_destinasi as id, nama, deskripsi, harga FROM destinasi ORDER BY nama ASC`,
             await sql`SELECT id_paket as id, nama_paket as nama, deskripsi, harga_paket as harga FROM paket_wisata ORDER BY nama_paket ASC`,
