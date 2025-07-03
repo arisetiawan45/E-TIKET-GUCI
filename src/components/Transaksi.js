@@ -70,6 +70,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
   const contentDiv = div.querySelector("#transaksiContent");
   const tbody = div.querySelector("#transaksiBody");
 
+  // --- PERBAIKAN: Fungsi Cetak PDF ---
   const printPDF = () => {
     const printElement = document.createElement('div');
     printElement.style.padding = '20px';
@@ -78,7 +79,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
     const reportTitle = document.createElement('h2');
     reportTitle.textContent = 'Laporan Riwayat Transaksi';
     const reportDate = document.createElement('p');
-    reportDate.textContent = `Dicetak pada: ${new Date().toLocaleString('id-ID')}`;
+    reportDate.textContent = `Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' })}`;
     reportDate.style.marginBottom = '20px';
     printElement.appendChild(reportTitle);
     printElement.appendChild(reportDate);
@@ -98,11 +99,11 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
           <th style="border: 1px solid #ddd; padding: 8px;">Status</th>
         </tr>
       </thead>
-      <tbody>
-      </tbody>
+      <tbody></tbody>
     `;
     const printTbody = printTable.querySelector('tbody');
     
+    // Ambil SEMUA data yang sudah difilter dan disortir, bukan hanya yang ada di halaman saat ini
     const sortedData = [...filteredTransactions].sort((a, b) => {
         const valA = a[sortColumn]; const valB = b[sortColumn];
         let comparison = 0;
@@ -127,6 +128,11 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
 
     printElement.appendChild(printTable);
 
+    // Langkah Kunci: Tambahkan elemen ke body secara sementara agar browser bisa merendernya
+    printElement.style.position = 'absolute';
+    printElement.style.left = '-9999px';
+    document.body.appendChild(printElement);
+
     const opt = {
       margin:       0.5,
       filename:     `laporan-transaksi.pdf`,
@@ -134,7 +140,11 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
       html2canvas:  { scale: 2 },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
     };
-    html2pdf().from(printElement).set(opt).save();
+
+    // Jalankan html2pdf dan hapus elemen sementara setelah selesai
+    html2pdf().from(printElement).set(opt).save().then(() => {
+      document.body.removeChild(printElement);
+    });
   };
 
   const renderTable = () => {
@@ -193,7 +203,6 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
         const user = netlifyIdentity.currentUser();
         if (!user) throw new Error('Otorisasi gagal.');
 
-        // PERBAIKAN: Menggunakan endpoint baru 'get-history-data'
         const endpoint = `/.netlify/functions/get-history-data?scope=${scope}`;
         const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
         const response = await fetch(endpoint, { headers });
