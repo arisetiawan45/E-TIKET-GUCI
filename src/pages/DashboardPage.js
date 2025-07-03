@@ -17,13 +17,14 @@ export default function DashboardPage() {
 
       body {
         margin: 0;
-        background-color: #eef3f7;
+        background-color: #f6f9fc;
       }
 
       header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
         padding: 25px 30px;
         background: linear-gradient(90deg, #667eea, #764ba2);
         color: white;
@@ -42,25 +43,26 @@ export default function DashboardPage() {
 
       #logoutBtn {
         background-color: white;
-        color: #333;
+        color: #444;
         border: none;
-        border-radius: 20px;
+        border-radius: 25px;
         padding: 8px 18px;
         cursor: pointer;
-        font-weight: 500;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-        transition: background-color 0.3s ease;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
       }
 
       #logoutBtn:hover {
-        background-color: #ddd;
+        background-color: #e4e4e4;
       }
 
       nav#main-nav {
-        background-color: #ffffff;
+        background-color: #fff;
         display: flex;
         justify-content: center;
-        padding: 15px 0;
+        flex-wrap: wrap;
+        padding: 15px 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       }
 
@@ -70,7 +72,8 @@ export default function DashboardPage() {
         color: #333;
         font-weight: 500;
         position: relative;
-        padding-bottom: 5px;
+        padding: 8px 6px;
+        transition: color 0.3s ease;
       }
 
       .nav-link:hover {
@@ -80,24 +83,48 @@ export default function DashboardPage() {
       .nav-link.active::after {
         content: '';
         position: absolute;
-        bottom: 0;
+        bottom: -4px;
         left: 0;
         height: 2px;
         width: 100%;
         background-color: #667eea;
+        border-radius: 4px;
       }
 
       main#content {
-        padding: 30px;
+        padding: 35px 20px;
         min-height: 75vh;
-        background-color: #eef3f7;
+        background-color: #f6f9fc;
       }
 
       .card {
         background: white;
         border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        padding: 25px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        animation: fadeIn 0.3s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @media (max-width: 600px) {
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        nav#main-nav {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .nav-link {
+          margin: 10px 0;
+        }
       }
     </style>
 
@@ -138,10 +165,8 @@ export default function DashboardPage() {
     const subpath = window.location.hash.split('/')[2] || 'admin';
     contentArea.innerHTML = '';
 
-    // Update link aktif
     updateActiveLink();
 
-    // Buat div card untuk membungkus halaman
     const card = document.createElement('div');
     card.className = 'card';
 
@@ -171,13 +196,9 @@ export default function DashboardPage() {
     contentArea.appendChild(card);
   };
 
-  // Navigasi saat hash berubah
   window.addEventListener('hashchange', renderSubPage);
-
-  // Render awal
   renderSubPage();
 
-  // Logout
   div.querySelector('#logoutBtn').addEventListener('click', () => {
     netlifyIdentity.logout();
   });
