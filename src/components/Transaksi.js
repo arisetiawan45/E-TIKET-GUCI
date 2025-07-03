@@ -71,49 +71,41 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
   const contentDiv = div.querySelector("#transaksiContent");
   const tbody = div.querySelector("#transaksiBody");
 
-  // --- PERBAIKAN: Fungsi Cetak PDF ---
+  // --- PERBAIKAN TOTAL: Fungsi Cetak PDF ---
   const printPDF = () => {
     const printBtn = div.querySelector('#printPdfBtn');
     if (!printBtn) return;
-
     printBtn.disabled = true;
     printBtn.textContent = 'Mempersiapkan...';
 
-    const printElement = document.createElement('div');
-    printElement.style.padding = '20px';
-    printElement.style.fontFamily = 'sans-serif';
-
-    const reportTitle = document.createElement('h2');
-    reportTitle.textContent = 'Laporan Riwayat Transaksi';
-    const reportDate = document.createElement('p');
-    reportDate.textContent = `Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' })}`;
-    reportDate.style.marginBottom = '20px';
-    printElement.appendChild(reportTitle);
-    printElement.appendChild(reportDate);
-
-    const printTable = document.createElement('table');
-    printTable.style.width = '100%';
-    printTable.style.borderCollapse = 'collapse';
-    printTable.innerHTML = `
-      <thead style="background-color: #f2f2f2;">
-        <tr>
-          <th style="border: 1px solid #ddd; padding: 8px;">ID</th>
-          <th style="border: 1px solid #ddd; padding: 8px;">Nama Pemesan</th>
-          <th style="border: 1px solid #ddd; padding: 8px;">Tgl Kunjungan</th>
-          <th style="border: 1px solid #ddd; padding: 8px;">Waktu Transaksi</th>
-          <th style="border: 1px solid #ddd; padding: 8px;">Jumlah</th>
-          <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
-          <th style="border: 1px solid #ddd; padding: 8px;">Status</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
+    // 1. Buat elemen kontainer untuk versi cetak
+    const printContainer = document.createElement('div');
+    printContainer.style.padding = '1rem';
+    printContainer.innerHTML = `
+        <h2 style="text-align: center;">Laporan Riwayat Transaksi</h2>
+        <p style="text-align: center; font-size: 0.9em;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="border: 1px solid #ddd; padding: 8px;">ID</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Nama Pemesan</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Tgl Kunjungan</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Waktu Transaksi</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Jumlah</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
     `;
-    const printTbody = printTable.querySelector('tbody');
     
+    // 2. Isi tabel cetak dengan SEMUA data yang sudah difilter dan disortir
+    const printTbody = printContainer.querySelector('tbody');
     const sortedData = [...filteredTransactions].sort((a, b) => {
-        const valA = a[sortColumn]; const valB = b[sortColumn];
-        let comparison = 0;
-        if (valA > valB) comparison = 1; else if (valA < valB) comparison = -1;
+        const valA = a[sortColumn], valB = b[sortColumn];
+        let comparison = 0; if (valA > valB) comparison = 1; else if (valA < valB) comparison = -1;
         return sortDirection === 'desc' ? comparison * -1 : comparison;
     });
 
@@ -132,33 +124,30 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
         printTbody.appendChild(tr);
     });
 
-    printElement.appendChild(printTable);
+    // 3. Simpan konten asli halaman dan ganti dengan konten cetak
+    const appContainer = document.getElementById('app');
+    const originalContent = appContainer.innerHTML;
+    appContainer.innerHTML = '';
+    appContainer.appendChild(printContainer);
 
-    printElement.style.position = 'absolute';
-    printElement.style.left = '-9999px';
-    document.body.appendChild(printElement);
-
+    // 4. Jalankan fungsi cetak pada konten baru
     const opt = {
-      margin:       0.5,
-      filename:     `laporan-transaksi.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+        margin: 0.5,
+        filename: `laporan-transaksi.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
     };
 
-    // Memberi jeda singkat agar browser bisa merender elemen sebelum dicetak
-    setTimeout(() => {
-        html2pdf().from(printElement).set(opt).save().then(() => {
-            document.body.removeChild(printElement);
-            printBtn.disabled = false;
-            printBtn.textContent = 'Cetak Laporan';
-        }).catch(err => {
-            console.error("Gagal membuat PDF:", err);
-            document.body.removeChild(printElement);
-            printBtn.disabled = false;
-            printBtn.textContent = 'Cetak Laporan';
-        });
-    }, 100);
+    html2pdf().from(printContainer).set(opt).save().finally(() => {
+        // 5. Kembalikan konten asli halaman setelah selesai
+        appContainer.innerHTML = originalContent;
+        // Panggil kembali fungsi inisialisasi untuk mengembalikan event listener
+        // Cara paling sederhana adalah dengan memicu router
+        const currentHash = window.location.hash;
+        window.location.hash = '#/temp';
+        window.location.hash = currentHash;
+    });
   };
 
   const renderTable = () => {
