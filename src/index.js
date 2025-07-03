@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import KontakPage from './pages/Kontak';
 import TanyaJawabPage from './pages/TanyaJawab';
 import TutorialPage from './pages/Tutorial';
+import TentangKamiPage from './pages/TentangKami';
 
 // Menunggu hingga seluruh dokumen HTML selesai dimuat
 window.addEventListener('DOMContentLoaded', () => {
@@ -23,7 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Langkah 1: Tangani Rute Publik terlebih dahulu.
     // Rute ini bisa diakses siapa saja, kapan saja, tanpa perlu login.
-    if (path === '/tutorial' || path === '/tanya-jawab' || path === '/kontak') {
+    if (['/tutorial', '/tanya-jawab', '/kontak', '/tentang-kami'].includes(path)) {
         switch (path) {
             case '/tutorial':
                 app.appendChild(TutorialPage());
@@ -34,6 +35,9 @@ window.addEventListener('DOMContentLoaded', () => {
             case '/kontak':
                 app.appendChild(KontakPage());
                 break;
+            case '/tentang-kami':
+                app.appendChild(TentangKamiPage());
+          return;
         }
         return; // Keluar dari fungsi setelah menampilkan halaman publik.
     }
