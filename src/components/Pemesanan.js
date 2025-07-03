@@ -1,90 +1,36 @@
-// components/Pemesanan.js
 
 export default function Pemesanan(navigateToTransaksi) {
-  const div = document.createElement("div");
-  div.className = "pemesanan-container";
-
-  // Menambahkan styling untuk form yang lebih modern
-  div.innerHTML = `
+    const div = document.createElement("div");
+    div.innerHTML = `
     <style>
-      .pemesanan-card {
-        max-width: 700px;
-        margin: 20px auto;
-        padding: 30px 40px;
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      }
-      .pemesanan-card h2 {
-        text-align: center;
-        margin-top: 0;
-        margin-bottom: 30px;
-        font-size: 1.8rem;
-        color: #333;
-      }
-      .form-group {
-        margin-bottom: 20px;
-      }
-      .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: #555;
-      }
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-sizing: border-box;
-        font-size: 1rem;
-      }
-      .total-price-display {
-        text-align: right;
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin: 30px 0;
-      }
-      #btnSubmit {
-        width: 100%;
-        padding: 15px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        color: white;
-        background-color: #28a745;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      #btnSubmit:hover {
-        background-color: #218838;
-      }
-      #btnSubmit:disabled {
-        background-color: #5a9d6a;
-        cursor: not-allowed;
-      }
-      #formMessage {
-        text-align: center;
+      .pemesanan-card { max-width: 700px; margin: 20px auto; padding: 30px 40px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+      .pemesanan-card h2 { text-align: center; margin-top: 0; margin-bottom: 30px; font-size: 1.8rem; color: #333; }
+      .form-group { margin-bottom: 20px; }
+      .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+      .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 1rem; }
+      .total-price-display { text-align: right; font-size: 1.2rem; font-weight: bold; margin: 30px 0; }
+      #btnSubmit { width: 100%; padding: 15px; font-size: 1.1rem; font-weight: bold; color: white; background-color: #28a745; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+      #btnSubmit:hover { background-color: #218838; }
+      #btnSubmit:disabled { background-color: #5a9d6a; cursor: not-allowed; }
+      #formMessage { text-align: center; }
+      /* --- Media Query untuk HP --- */
+      @media (max-width: 768px) {
+        .pemesanan-card { margin: 20px 10px; padding: 20px; }
+        .pemesanan-card h2 { font-size: 1.5rem; }
       }
     </style>
-    
     <div class="pemesanan-card">
       <p id="loadingMessage" style="text-align: center;">Memuat data destinasi dan paket...</p>
       <form id="formPemesanan" style="display: none;">
         <h2>Formulir Pemesanan Tiket</h2>
-        
         <div class="form-group">
           <label for="namaPemesan">Nama Pemesan</label>
           <input type="text" id="namaPemesan" name="namaPemesan" placeholder="Masukkan nama lengkap Anda" required>
         </div>
-
         <div class="form-group">
           <label for="tanggal">Tanggal Kunjungan</label>
           <input type="date" id="tanggal" name="tanggal" required>
         </div>
-
         <div class="form-group">
           <label for="jenisTiket">Jenis Tiket</label>
           <select name="jenis" id="jenisTiket" required>
@@ -92,26 +38,21 @@ export default function Pemesanan(navigateToTransaksi) {
             <option value="paket">Paket Terusan</option>
           </select>
         </div>
-        
         <div id="destinasiWrapper" class="form-group">
           <label for="destinasiSelect">Pilih Destinasi Wisata</label>
           <select name="destinasi" id="destinasiSelect"></select>
         </div>
-        
         <div id="paketWrapper" class="form-group" style="display: none;">
           <label for="paketSelect">Pilih Paket Wisata</label>
           <select name="paket" id="paketSelect"></select>
         </div>
-        
         <div class="form-group">
           <label for="jumlahTiket">Jumlah Tiket</label>
           <input type="number" name="jumlah" id="jumlahTiket" min="1" value="1" required>
         </div>
-        
         <div class="total-price-display">
           Total Harga: <span id="totalHarga">Rp 0</span>
         </div>
-        
         <button type="submit" id="btnSubmit">Lanjut ke Pembayaran</button>
         <div id="formMessage" style="margin-top: 15px; font-weight: bold; color: red;"></div>
       </form>
