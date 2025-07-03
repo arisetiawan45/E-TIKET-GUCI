@@ -9,14 +9,14 @@ export default function DashboardPage() {
   const user = netlifyIdentity.currentUser();
   const userRoles = user?.app_metadata?.roles || [];
 
-  // Menentukan apakah pengguna adalah pengunjung biasa atau memiliki peran khusus
-  const isPengunjung = !userRoles.includes('admin') && !userRoles.includes('pimpinan');
+  // Menentukan apakah pengguna adalah Pemesan biasa atau memiliki peran khusus
+  const isPemesan = !userRoles.includes('admin') && !userRoles.includes('pimpinan');
 
   div.innerHTML = `
     <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #f0f0f0;">
       <div>
         <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
-        <small>Peran: ${userRoles.join(', ') || 'pengunjung'}</small>
+        <small>Peran: ${userRoles.join(', ') || 'Pemesan'}</small>
       </div>
       <button id="logoutBtn" style="padding: 8px 15px;">Logout</button>
     </header>
@@ -28,10 +28,10 @@ export default function DashboardPage() {
   const contentArea = div.querySelector('#content');
   
   // --- Navigasi menggunakan <a> dengan Pengecekan Peran ---
-  // PERBAIKAN: Link untuk pengunjung hanya muncul jika perannya adalah pengunjung.
+  // PERBAIKAN: Link untuk Pemesan hanya muncul jika perannya adalah Pemesan.
   nav.innerHTML = `
-    ${isPengunjung ? `<a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>` : ''}
-    ${isPengunjung ? `<a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>` : ''}
+    ${isPemesan ? `<a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>` : ''}
+    ${isPemesan ? `<a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>` : ''}
     ${userRoles.includes('admin') ? `<a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>` : ''}
     ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link" style="margin: 0 10px;">Halaman Pimpinan</a>` : ''}
   `;
@@ -53,8 +53,8 @@ export default function DashboardPage() {
     switch(subpath) {
       case 'pesan':
       case 'transaksi':
-        // PERBAIKAN: Hanya pengunjung yang bisa mengakses halaman ini.
-        if (isPengunjung) {
+        // PERBAIKAN: Hanya Pemesan yang bisa mengakses halaman ini.
+        if (isPemesan) {
           if (subpath === 'pesan') {
             const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
             contentArea.appendChild(Pemesanan(navigateToTransaksi));
