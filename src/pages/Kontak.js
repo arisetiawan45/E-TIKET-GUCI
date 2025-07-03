@@ -9,10 +9,10 @@ export default function KontakPage() {
       .contact-container {
         max-width: 900px;
         margin: 40px auto;
-        padding: 20px;
+        padding: 40px;
         font-family: sans-serif;
         background-color: #fff;
-        border-radius: 8px;
+        border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       }
       .contact-header {
@@ -33,6 +33,7 @@ export default function KontakPage() {
         display: grid;
         grid-template-columns: 1fr 1.5fr;
         gap: 40px;
+        align-items: flex-start;
       }
       .contact-info h3 {
         font-size: 1.5rem;
@@ -109,6 +110,21 @@ export default function KontakPage() {
         text-decoration: none;
         border-radius: 5px;
       }
+
+      /* --- PENYESUAIAN RESPONSIVE --- */
+      @media (max-width: 768px) {
+        .contact-container {
+            margin: 20px;
+            padding: 20px;
+        }
+        .contact-content {
+            grid-template-columns: 1fr; /* Ubah menjadi 1 kolom */
+            gap: 30px;
+        }
+        .contact-header h2 {
+            font-size: 2rem;
+        }
+      }
     </style>
 
     <div class="contact-container">
@@ -135,9 +151,7 @@ export default function KontakPage() {
         </div>
         <div class="contact-form">
           <h3>Kirim Pesan</h3>
-          <!-- PERUBAHAN PENTING PADA FORM -->
           <form id="formKontak" name="kontak" method="POST" data-netlify="true">
-            <!-- Input tersembunyi ini wajib ada untuk Netlify Forms -->
             <input type="hidden" name="form-name" value="kontak" />
             <div class="form-group">
               <label for="nama">Nama Anda</label>
@@ -158,47 +172,37 @@ export default function KontakPage() {
       </div>
 
       <div class="back-link-container">
-        <!-- Tombol kembali ini menggunakan href="#/" yang akan ditangani oleh router utama -->
         <a href="#/">Kembali ke Halaman Utama</a>
       </div>
     </div>
   `;
 
-  // --- PERUBAHAN LOGIKA SUBMIT ---
   const form = div.querySelector('#formKontak');
   const submitBtn = div.querySelector('#submitBtn');
   const formMessage = div.querySelector('#formMessage');
 
   form.addEventListener('submit', (e) => {
-    e.preventDefault(); // Mencegah reload halaman
-    
-    // Tampilkan status "mengirim"
+    e.preventDefault();
     submitBtn.disabled = true;
     submitBtn.textContent = 'Mengirim...';
     formMessage.style.display = 'none';
 
-    // Siapkan data untuk dikirim
     const formData = new FormData(form);
-    
-    // Kirim data menggunakan Fetch API
     fetch("/", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams(formData).toString(),
     })
     .then(() => {
-        // Jika berhasil
         formMessage.textContent = 'Terima kasih! Pesan Anda telah berhasil terkirim.';
         formMessage.className = 'form-message success';
         form.reset();
     })
     .catch((error) => {
-        // Jika gagal
         formMessage.textContent = `Terjadi kesalahan: ${error.message}`;
         formMessage.className = 'form-message error';
     })
     .finally(() => {
-        // Kembalikan tombol ke keadaan semula
         submitBtn.disabled = false;
         submitBtn.textContent = 'Kirim';
     });
