@@ -1,389 +1,191 @@
-// src/pages/AdminPage.js
+// DashboardPage dengan Halaman Admin Digabung & Desain Modern
 
-export default function AdminPage() {
-  const div = document.createElement("div");
-  div.className = "admin-container";
-  // Menambahkan styling dasar agar lebih rapi
+import Pemesanan from '../components/Pemesanan';
+import Transaksi from '../components/Transaksi';
+
+export default function DashboardPage() {
+  const div = document.createElement('div');
+  const user = netlifyIdentity.currentUser();
+  const userRoles = user?.app_metadata?.roles || [];
+
   div.innerHTML = `
     <style>
-      .admin-card {
-        background-color: #ffffff;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        margin-bottom: 30px;
+      * {
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
       }
-      .admin-card h3 {
-        margin-top: 0;
-        font-size: 1.5rem;
-        color: #333;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
-      }
-      .stats-container { display: flex; gap: 40px; }
-      .stats-container p { font-size: 1.1rem; margin: 0; }
-      .management-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-      .admin-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
-      .admin-form input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex-grow: 1; font-size: 0.9rem;}
-      .admin-form button { padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; font-weight: 500;}
-      .admin-list { list-style: none; padding: 0; }
-      .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-      .admin-list li:last-child { border-bottom: none; }
-      .admin-list .item-info p { margin: 4px 0 0 0; font-size: 0.85em; color: #666; }
-      .admin-list .actions button { margin-left: 8px; }
-      .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-      #transaksiTable { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-      #transaksiTable th, #transaksiTable td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-      #transaksiTable th { 
-        background-color: #f8f9fa; 
-        cursor: pointer; 
-        -webkit-user-select: none; /* Untuk Safari */
-        user-select: none; 
-      }
-      #transaksiTable th:hover { background-color: #e9ecef; }
-      .sort-indicator { margin-left: 5px; font-size: 0.8em; }
-      .status-select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-      .pagination-controls { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
-      .pagination-buttons button { padding: 8px 16px; cursor: pointer; }
-      .pagination-buttons button:disabled { cursor: not-allowed; opacity: 0.5; }
-      .search-bar { margin-bottom: 20px; }
-      .search-bar input { width: 300px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
 
-      /* --- Media Query untuk HP --- */
-      @media (max-width: 768px) {
-        .management-grid { grid-template-columns: 1fr; gap: 30px; }
-        .search-bar input { width: 100%; box-sizing: border-box; }
-        #transaksiTable { border: 0; }
-        #transaksiTable thead { border: none; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; }
-        #transaksiTable tr { display: block; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 2px rgba(0,0,0,0.1); }
-        #transaksiTable td { display: block; text-align: right; border-bottom: 1px solid #eee; padding: 10px; }
-        #transaksiTable td:last-child { border-bottom: 0; }
-        #transaksiTable td::before { content: attr(data-label); float: left; font-weight: bold; text-transform: uppercase; }
-        .pagination-controls { flex-direction: column; gap: 15px; }
-        .stats-container { flex-direction: column; gap: 10px; }
+      body {
+        margin: 0;
+        background-color: #f4f7fa;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 25px 30px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      }
+
+      header h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      header small {
+        font-size: 13px;
+        opacity: 0.9;
+      }
+
+      #logoutBtn {
+        background-color: white;
+        color: #333;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 18px;
+        cursor: pointer;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        transition: background-color 0.3s ease;
+      }
+
+      #logoutBtn:hover {
+        background-color: #ddd;
+      }
+
+      nav#main-nav {
+        background-color: #ffffff;
+        display: flex;
+        justify-content: center;
+        padding: 15px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+
+      .nav-link {
+        margin: 0 15px;
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+        position: relative;
+        padding-bottom: 5px;
+      }
+
+      .nav-link:hover {
+        color: #667eea;
+      }
+
+      .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 2px;
+        width: 100%;
+        background-color: #667eea;
+      }
+
+      main#content {
+        padding: 30px;
+        min-height: 75vh;
+        background-color: #f4f7fa;
+      }
+
+      .card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.05);
       }
     </style>
-    <section style="padding: 20px 0;">
-      <h2>Halaman Admin</h2>
-      <p id="loading-message">Memuat data admin...</p>
-      
-      <div id="admin-content" style="display: none;">
-        
-        <div class="admin-card">
-          <h3>Statistik Situs</h3>
-          <div class="stats-container">
-            <p><strong>Total Transaksi:</strong> <span id="totalTransaksi">0</span></p>
-            <p><strong>Total Tiket Terjual:</strong> <span id="totalTiket">0</span></p>
-          </div>
-        </div>
 
-        <div class="admin-card">
-            <h3>Kelola Destinasi & Paket</h3>
-            <div class="management-grid">
-                <div>
-                    <h4>Destinasi Wisata</h4>
-                    <form id="formDestinasi" class="admin-form">
-                        <input type="text" name="nama" placeholder="Nama Destinasi" required>
-                        <input type="text" name="deskripsi" placeholder="Deskripsi Singkat">
-                        <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
-                        <button type="submit">Tambah</button>
-                    </form>
-                    <ul id="daftarDestinasi" class="admin-list"></ul>
-                </div>
-                <div>
-                    <h4>Paket Wisata</h4>
-                    <form id="formPaket" class="admin-form">
-                        <input type="text" name="nama" placeholder="Nama Paket" required>
-                        <input type="text" name="deskripsi" placeholder="Deskripsi Singkat">
-                        <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
-                        <button type="submit">Tambah</button>
-                    </form>
-                    <ul id="daftarPaket" class="admin-list"></ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="admin-card">
-            <h3>Kelola Transaksi</h3>
-            <div class="search-bar">
-              <input type="search" id="searchInput" placeholder="Cari nama pemesan...">
-            </div>
-            <table id="transaksiTable">
-                <thead>
-                    <tr>
-                      <th data-sort="id_transaksi">ID <span class="sort-indicator"></span></th>
-                      <th data-sort="nama_pemesan">Nama Pemesan <span class="sort-indicator"></span></th>
-                      <th data-sort="tanggal_kunjungan">Tgl Kunjungan <span class="sort-indicator"></span></th>
-                      <th data-sort="jumlah">Jumlah <span class="sort-indicator"></span></th>
-                      <th data-sort="total">Total <span class="sort-indicator"></span></th>
-                      <th data-sort="status">Status <span class="sort-indicator"></span></th>
-                    </tr>
-                </thead>
-                <tbody id="transaksiBody"></tbody>
-            </table>
-            <div class="pagination-controls">
-                <span id="pageIndicator"></span>
-                <div class="pagination-buttons">
-                    <button id="prevPageBtn" disabled>Sebelumnya</button>
-                    <button id="nextPageBtn" disabled>Berikutnya</button>
-                </div>
-            </div>
-        </div>
+    <header>
+      <div>
+        <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
+        <small>Peran: ${userRoles.join(', ') || 'pengunjung'} (Mode Development)</small>
       </div>
-    </section>
+      <button id="logoutBtn">Logout</button>
+    </header>
+
+    <nav id="main-nav"></nav>
+    <main id="content"></main>
   `;
 
-  // --- State Aplikasi ---
-  let destinasiList = [], paketList = [], transaksiList = [], filteredTransaksi = [];
-  let currentPage = 1, rowsPerPage = 10, sortColumn = 'id_transaksi', sortDirection = 'desc', searchTerm = '';
+  const nav = div.querySelector('#main-nav');
+  const contentArea = div.querySelector('#content');
 
-  // --- Fungsi Render ---
-  const renderList = (list, containerId, type) => {
-    const ul = div.querySelector(containerId);
-    ul.innerHTML = "";
-    list.forEach(item => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <div class="item-info">
-          <strong>${item.nama}</strong> - <span>Rp ${Number(item.harga).toLocaleString('id-ID')}</span>
-          <p>${item.deskripsi || 'Tidak ada deskripsi'}</p>
-        </div>
-        <div class="actions">
-          <button data-id="${item.id}" data-type="${type}" data-action="edit">Edit</button>
-          <button data-id="${item.id}" data-type="${type}" data-action="delete" class="delete-btn">Hapus</button>
-        </div>
-      `;
-      ul.appendChild(li);
-    });
-  };
-  const reRenderAll = () => {
-    renderList(destinasiList, "#daftarDestinasi", "destinasi");
-    renderList(paketList, "#daftarPaket", "paket");
-  };
-  
-  const renderTransaksi = () => {
-    const tbody = div.querySelector("#transaksiBody");
-    const pageIndicator = div.querySelector("#pageIndicator");
-    const prevBtn = div.querySelector("#prevPageBtn");
-    const nextBtn = div.querySelector("#nextPageBtn");
-    tbody.innerHTML = "";
+  nav.innerHTML = `
+    <a href="#/dashboard/pesan" class="nav-link">Pesan Tiket</a>
+    <a href="#/dashboard/transaksi" class="nav-link">Lihat Transaksi</a>
+    <a href="#/dashboard/admin" class="nav-link">Halaman Admin</a>
+    ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link">Halaman Pimpinan</a>` : ''}
+  `;
 
-    filteredTransaksi = transaksiList.filter(trx => 
-        (trx.nama_pemesan || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const sortedTransaksi = [...filteredTransaksi].sort((a, b) => {
-        const valA = a[sortColumn];
-        const valB = b[sortColumn];
-        let comparison = 0;
-        if (valA > valB) comparison = 1; else if (valA < valB) comparison = -1;
-        return sortDirection === 'desc' ? comparison * -1 : comparison;
-    });
-
-    const totalPages = Math.ceil(sortedTransaksi.length / rowsPerPage);
-    const pageData = sortedTransaksi.slice((currentPage - 1) * rowsPerPage, (currentPage - 1) * rowsPerPage + rowsPerPage);
-    
-    pageData.forEach(trx => {
-      const tr = document.createElement("tr");
-      // PENYESUAIAN: Menambahkan atribut data-label untuk tampilan mobile
-      tr.innerHTML = `
-        <td data-label="ID">${trx.id_transaksi}</td>
-        <td data-label="Nama Pemesan">${trx.nama_pemesan || 'N/A'}</td>
-        <td data-label="Tgl Kunjungan">${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID')}</td>
-        <td data-label="Jumlah">${trx.jumlah}</td>
-        <td data-label="Total">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
-        <td data-label="Status">
-          <select class="status-select" data-id="${trx.id_transaksi}">
-            <option value="Pending" ${trx.status === 'Pending' ? 'selected' : ''}>Pending</option>
-            <option value="Dibayar" ${trx.status === 'Dibayar' ? 'selected' : ''}>Dibayar</option>
-          </select>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-    
-    pageIndicator.textContent = `Halaman ${currentPage} dari ${totalPages || 1}`;
-    prevBtn.disabled = currentPage === 1;
-    nextBtn.disabled = currentPage >= totalPages;
-
-    div.querySelectorAll('#transaksiTable th').forEach(th => {
-        const indicator = th.querySelector('.sort-indicator');
-        if (th.dataset.sort === sortColumn) indicator.textContent = sortDirection === 'asc' ? '▲' : '▼';
-        else indicator.textContent = '';
+  const updateActiveLink = () => {
+    const links = nav.querySelectorAll('.nav-link');
+    links.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === window.location.hash) {
+        link.classList.add('active');
+      }
     });
   };
 
-  // --- Fungsi API ---
-  const fetchData = async () => {
-    try {
-      const response = await fetch('/.netlify/functions/get-admin-data');
-      if (!response.ok) throw new Error('Gagal mengambil data dari server');
-      const data = await response.json();
-
-      destinasiList = data.destinasi;
-      paketList = data.paket;
-      transaksiList = data.transaksi;
-      
-      div.querySelector("#totalTransaksi").textContent = transaksiList.length;
-      div.querySelector("#totalTiket").textContent = transaksiList.reduce((sum, trx) => sum + (trx.jumlah || 0), 0);
-
-      reRenderAll();
-      renderTransaksi();
-
-      div.querySelector("#loading-message").style.display = 'none';
-      div.querySelector("#admin-content").style.display = 'block';
-    } catch (error) {
-      div.querySelector("#loading-message").textContent = `Error: ${error.message}`;
-    }
+  const AdminContent = () => {
+    const section = document.createElement('section');
+    section.className = 'card';
+    section.innerHTML = `
+      <h2>Halaman Admin</h2>
+      <p>Konten admin akan dimuat dari server (placeholder)</p>
+      <p style="margin-top: 20px; color: #777;">🔧 Fitur seperti kelola destinasi, paket wisata, dan transaksi akan tampil di sini.</p>
+    `;
+    return section;
   };
 
-  // --- Event Listeners ---
-  const setupEventListeners = () => {
-    const handleFormSubmit = async (e, type) => {
-      e.preventDefault();
-      const form = e.target;
-      const nama = form.nama.value.trim();
-      const deskripsi = form.deskripsi.value.trim();
-      const harga = parseInt(form.harga.value);
-      if (!nama || isNaN(harga) || harga < 0) {
-        alert('Nama dan Harga harus diisi dengan benar.');
+  const renderSubPage = () => {
+    const subpath = window.location.hash.split('/')[2] || 'admin';
+    contentArea.innerHTML = '';
+    updateActiveLink();
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    switch (subpath) {
+      case 'pesan':
+        const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
+        card.appendChild(Pemesanan(navigateToTransaksi));
+        break;
+      case 'transaksi':
+        card.appendChild(Transaksi());
+        break;
+      case 'admin':
+        contentArea.appendChild(AdminContent());
         return;
-      }
-      try {
-        const response = await fetch('/.netlify/functions/add-item', {
-          method: 'POST',
-          body: JSON.stringify({ type, nama, deskripsi, harga })
-        });
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || `Gagal menambah ${type}`);
-        }
-        const newItem = await response.json();
-        
-        if (type === 'destinasi') destinasiList.push(newItem);
-        else paketList.push(newItem);
-        
-        reRenderAll();
-        form.reset();
-      } catch (error) {
-        alert(error.message);
-      }
-    };
-
-    div.querySelector("#formDestinasi").addEventListener("submit", (e) => handleFormSubmit(e, 'destinasi'));
-    div.querySelector("#formPaket").addEventListener("submit", (e) => handleFormSubmit(e, 'paket'));
-    
-    div.addEventListener('click', async (e) => {
-      const { id, type, action } = e.target.dataset;
-      if (!id || !type || !action) return;
-
-      if (action === 'delete') {
-        if (!confirm('Apakah Anda yakin ingin menghapus item ini?')) return;
-        try {
-          const response = await fetch(`/.netlify/functions/delete-item?type=${type}&id=${id}`, { method: 'DELETE' });
-          if (!response.ok) throw new Error('Gagal menghapus item');
-          
-          if (type === 'destinasi') destinasiList = destinasiList.filter(item => item.id != id);
-          if (type === 'paket') paketList = paketList.filter(item => item.id != id);
-          reRenderAll();
-        } catch (error) {
-          alert(error.message);
-        }
-      }
-
-      if (action === 'edit') {
-        const list = type === 'destinasi' ? destinasiList : paketList;
-        const item = list.find(i => i.id == id);
-        
-        const newName = prompt('Masukkan nama baru:', item.nama);
-        const newDesc = prompt('Masukkan deskripsi baru:', item.deskripsi || '');
-        const newHarga = prompt('Masukkan harga baru:', item.harga);
-
-        if (newName === null || newDesc === null || newHarga === null) return;
-        const hargaInt = parseInt(newHarga);
-        if (!newName.trim() || isNaN(hargaInt) || hargaInt < 0) {
-          alert('Input tidak valid');
+      case 'pimpinan':
+        if (userRoles.includes('pimpinan')) {
+          card.innerHTML = '<h3>Konten Pimpinan akan ditambahkan.</h3>';
+        } else {
+          window.location.hash = '#/dashboard/admin';
           return;
         }
-        try {
-          const response = await fetch('/.netlify/functions/update-item', {
-            method: 'PUT',
-            body: JSON.stringify({ type, id, nama: newName.trim(), deskripsi: newDesc.trim(), harga: hargaInt })
-          });
-          if (!response.ok) throw new Error('Gagal mengupdate item');
-          const updatedItem = await response.json();
-          
-          const index = list.findIndex(i => i.id == id);
-          list[index] = updatedItem;
-          reRenderAll();
-        } catch(error) {
-          alert(error.message);
-        }
-      }
-    });
+        break;
+      default:
+        window.location.hash = '#/dashboard/admin';
+        return;
+    }
 
-    div.querySelector("#transaksiTable").addEventListener('change', async (e) => {
-        if (e.target.classList.contains('status-select')) {
-            const id = e.target.dataset.id;
-            const status = e.target.value;
-            
-            e.target.disabled = true;
-            try {
-                const response = await fetch('/.netlify/functions/update-transaction-status', {
-                    method: 'PUT',
-                    body: JSON.stringify({ id, status })
-                });
-                if (!response.ok) throw new Error('Gagal mengupdate status');
-            } catch (error) {
-                alert(error.message);
-                e.target.value = transaksiList.find(t => t.id_transaksi == id).status;
-            } finally {
-                e.target.disabled = false;
-            }
-        }
-    });
-    // Listener untuk Paginasi
-    div.querySelector("#prevPageBtn").addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            renderTransaksi();
-        }
-    });
-    div.querySelector("#nextPageBtn").addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredTransaksi.length / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            renderTransaksi();
-        }
-    });
-
-    // Listener untuk Sorting
-    div.querySelectorAll('#transaksiTable th[data-sort]').forEach(header => {
-        header.addEventListener('click', () => {
-            const newSortColumn = header.dataset.sort;
-            if (sortColumn === newSortColumn) {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortColumn = newSortColumn;
-                sortDirection = 'asc';
-            }
-            currentPage = 1; // Kembali ke halaman pertama setelah sort
-            renderTransaksi();
-        });
-    });
-
-    // Listener untuk Search Input
-    div.querySelector('#searchInput').addEventListener('input', (e) => {
-        searchTerm = e.target.value;
-        currentPage = 1; // Selalu kembali ke halaman pertama saat mencari
-        renderTransaksi();
-    });
+    contentArea.appendChild(card);
   };
 
-  // --- Inisialisasi ---
-  fetchData();
-  setupEventListeners();
+  window.addEventListener('hashchange', renderSubPage);
+  renderSubPage();
+
+  div.querySelector('#logoutBtn').addEventListener('click', () => {
+    netlifyIdentity.logout();
+  });
 
   return div;
 }
