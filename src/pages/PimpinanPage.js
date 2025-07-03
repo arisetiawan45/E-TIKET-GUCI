@@ -33,24 +33,27 @@ export default function PimpinanPage() {
           </div>
         </div>
         
-        <!-- 2. Area untuk menampilkan komponen Transaksi -->
+        <!-- Area untuk menampilkan komponen Transaksi -->
         <div id="transaksi-component-wrapper"></div>
       </div>
     </section>
   `;
 
-  // Fungsi untuk mengambil data statistik
-  const fetchStats = async () => {
+  // Fungsi untuk mengambil semua data yang diperlukan sekali saja
+  const loadPageData = async () => {
     const loadingMessage = div.querySelector("#loading-message");
     const pimpinanContent = div.querySelector("#pimpinan-content");
     try {
       const user = netlifyIdentity.currentUser();
-      if (!user) throw new Error('Otorisasi gagal.');
+      if (!user) throw new Error('Otorisasi gagal. Silakan login kembali.');
       
       const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
       // Memanggil endpoint terpusat dengan scope yang benar
       const response = await fetch('/.netlify/functions/get-history-data?scope=pimpinan', { headers });
-      if (!response.ok) throw new Error('Gagal mengambil data statistik');
+      if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Gagal mengambil data laporan');
+      }
       const data = await response.json();
 
       // Update statistik
@@ -63,6 +66,7 @@ export default function PimpinanPage() {
 
       // Panggil dan tampilkan komponen Transaksi, oper data yang sudah diambil
       const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
+      transaksiWrapper.innerHTML = ''; // Bersihkan wrapper jika ada konten sebelumnya
       transaksiWrapper.appendChild(
         Transaksi({ 
           initialData: data.transaksi, // Berikan data transaksi langsung
@@ -73,11 +77,12 @@ export default function PimpinanPage() {
 
     } catch (error) {
       loadingMessage.textContent = `Error: ${error.message}`;
+      loadingMessage.style.color = 'red';
     }
   };
 
-  // Ambil data statistik dan render komponen
-  fetchStats();
+  // Ambil data dan render komponen saat halaman dimuat
+  loadPageData();
 
   return div;
 }

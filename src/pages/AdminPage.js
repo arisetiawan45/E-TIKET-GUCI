@@ -116,9 +116,14 @@ export default function AdminPage() {
   
   // --- Fungsi API (disederhanakan) ---
   const fetchData = async () => {
+    const loadingMessage = div.querySelector("#loading-message");
+    const adminContent = div.querySelector("#admin-content");
     try {
-      // PERBAIKAN: Menggunakan endpoint terpusat dengan scope 'admin'
-      const response = await fetch('/.netlify/functions/get-history-data?scope=admin');
+      const user = netlifyIdentity.currentUser();
+      if (!user) throw new Error('Otorisasi gagal. Silakan login kembali.');
+
+      const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
+      const response = await fetch('/.netlify/functions/get-history-data?scope=admin', { headers });
       if (!response.ok) throw new Error('Gagal mengambil data dari server');
       const data = await response.json();
 
@@ -130,10 +135,22 @@ export default function AdminPage() {
 
       reRenderAll();
 
-      div.querySelector("#loading-message").style.display = 'none';
-      div.querySelector("#admin-content").style.display = 'block';
+      loadingMessage.style.display = 'none';
+      adminContent.style.display = 'block';
+
+      // Panggil komponen Transaksi setelah data utama dimuat
+      const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
+      transaksiWrapper.innerHTML = ''; // Bersihkan wrapper
+      transaksiWrapper.appendChild(
+        Transaksi({ 
+          initialData: data.transaksi, 
+          adminFeatures: true, 
+          scope: 'admin' 
+        })
+      );
+
     } catch (error) {
-      div.querySelector("#loading-message").textContent = `Error: ${error.message}`;
+      loadingMessage.textContent = `Error: ${error.message}`;
     }
   };
 
@@ -226,10 +243,6 @@ export default function AdminPage() {
   // --- Inisialisasi ---
   fetchData();
   setupEventListeners();
-
-  // 3. Panggil dan tampilkan komponen Transaksi di dalam wrapper
-  const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
-  transaksiWrapper.appendChild(Transaksi({ scope: 'admin', adminFeatures: true }));
 
   return div;
 }
