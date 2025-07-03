@@ -30,6 +30,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
       .pagination-buttons button:disabled { cursor: not-allowed; opacity: 0.5; }
       .search-bar input { width: 250px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
       #printPdfBtn { padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+      #printPdfBtn:disabled { background-color: #5a9ed8; cursor: not-allowed; }
     </style>
     <div class="transaksi-container">
       <p id="loadingMessage">Memuat riwayat transaksi...</p>
@@ -72,6 +73,12 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
 
   // --- PERBAIKAN: Fungsi Cetak PDF ---
   const printPDF = () => {
+    const printBtn = div.querySelector('#printPdfBtn');
+    if (!printBtn) return;
+
+    printBtn.disabled = true;
+    printBtn.textContent = 'Mempersiapkan...';
+
     const printElement = document.createElement('div');
     printElement.style.padding = '20px';
     printElement.style.fontFamily = 'sans-serif';
@@ -103,7 +110,6 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
     `;
     const printTbody = printTable.querySelector('tbody');
     
-    // Ambil SEMUA data yang sudah difilter dan disortir, bukan hanya yang ada di halaman saat ini
     const sortedData = [...filteredTransactions].sort((a, b) => {
         const valA = a[sortColumn]; const valB = b[sortColumn];
         let comparison = 0;
@@ -128,7 +134,6 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
 
     printElement.appendChild(printTable);
 
-    // Langkah Kunci: Tambahkan elemen ke body secara sementara agar browser bisa merendernya
     printElement.style.position = 'absolute';
     printElement.style.left = '-9999px';
     document.body.appendChild(printElement);
@@ -141,10 +146,19 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false,
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
     };
 
-    // Jalankan html2pdf dan hapus elemen sementara setelah selesai
-    html2pdf().from(printElement).set(opt).save().then(() => {
-      document.body.removeChild(printElement);
-    });
+    // Memberi jeda singkat agar browser bisa merender elemen sebelum dicetak
+    setTimeout(() => {
+        html2pdf().from(printElement).set(opt).save().then(() => {
+            document.body.removeChild(printElement);
+            printBtn.disabled = false;
+            printBtn.textContent = 'Cetak Laporan';
+        }).catch(err => {
+            console.error("Gagal membuat PDF:", err);
+            document.body.removeChild(printElement);
+            printBtn.disabled = false;
+            printBtn.textContent = 'Cetak Laporan';
+        });
+    }, 100);
   };
 
   const renderTable = () => {
