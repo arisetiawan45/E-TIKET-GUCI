@@ -6,68 +6,104 @@ export default function AdminPage() {
   // Menambahkan styling dasar agar lebih rapi
   div.innerHTML = `
     <style>
-      .admin-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
-      .admin-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex-grow: 1; }
-      .admin-form button { padding: 8px 12px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 4px;}
+      .admin-card {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 30px;
+      }
+      .admin-card h3 {
+        margin-top: 0;
+        font-size: 1.5rem;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+      }
+      .stats-container {
+        display: flex;
+        gap: 40px;
+      }
+      .stats-container p {
+        font-size: 1.1rem;
+        margin: 0;
+      }
+      .management-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+      }
+      .admin-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
+      .admin-form input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex-grow: 1; font-size: 0.9rem;}
+      .admin-form button { padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; font-weight: 500;}
       .admin-list { list-style: none; padding: 0; }
-      .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-      .admin-list .item-info p { margin: 5px 0 0 0; font-size: 0.9em; color: #555; }
-      .delete-btn { background-color: #dc3545; color: white; border: none; }
+      .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+      .admin-list li:last-child { border-bottom: none; }
+      .admin-list .item-info p { margin: 4px 0 0 0; font-size: 0.85em; color: #666; }
+      .admin-list .actions button { margin-left: 8px; }
+      .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
       #transaksiTable { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-      #transaksiTable th, #transaksiTable td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      #transaksiTable th { background-color: #f2f2f2; }
-      .status-select { padding: 5px; border-radius: 4px; }
+      #transaksiTable th, #transaksiTable td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+      #transaksiTable th { background-color: #f8f9fa; }
+      .status-select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
     </style>
-    <section style="padding: 20px;">
+    <section style="padding: 20px 0;">
       <h2>Halaman Admin</h2>
       <p id="loading-message">Memuat data admin...</p>
       
       <div id="admin-content" style="display: none;">
-        <div style="margin-top: 20px; display: flex; gap: 40px;">
-          <p><strong>Total Transaksi:</strong> <span id="totalTransaksi">0</span></p>
-          <p><strong>Total Tiket Terjual:</strong> <span id="totalTiket">0</span></p>
-        </div>
-
-        <hr>
-        <h3>Kelola Destinasi & Paket</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 50px;">
-          <div>
-            <h4>Destinasi Wisata</h4>
-            <form id="formDestinasi" class="admin-form">
-              <input type="text" name="nama" placeholder="Nama Destinasi" required>
-              <input type="text" name="deskripsi" placeholder="Deskripsi Singkat">
-              <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
-              <button type="submit">Tambah</button>
-            </form>
-            <ul id="daftarDestinasi" class="admin-list"></ul>
-          </div>
-          <div>
-            <h4>Paket Wisata</h4>
-            <form id="formPaket" class="admin-form">
-              <input type="text" name="nama" placeholder="Nama Paket" required>
-              <input type="text" name="deskripsi" placeholder="Deskripsi Singkat">
-              <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
-              <button type="submit">Tambah</button>
-            </form>
-            <ul id="daftarPaket" class="admin-list"></ul>
+        
+        <div class="admin-card">
+          <h3>Statistik Situs</h3>
+          <div class="stats-container">
+            <p><strong>Total Transaksi:</strong> <span id="totalTransaksi">0</span></p>
+            <p><strong>Total Tiket Terjual:</strong> <span id="totalTiket">0</span></p>
           </div>
         </div>
 
-        <hr>
-        <h3>Kelola Transaksi</h3>
-        <table id="transaksiTable">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nama Pemesan</th>
-              <th>Tgl Kunjungan</th>
-              <th>Jumlah</th>
-              <th>Total</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="transaksiBody"></tbody>
-        </table>
+        <div class="admin-card">
+            <h3>Kelola Destinasi & Paket</h3>
+            <div class="management-grid">
+                <div>
+                    <h4>Destinasi Wisata</h4>
+                    <form id="formDestinasi" class="admin-form">
+                        <input type="text" name="nama" placeholder="Nama Destinasi" required>
+                        <input type="text" name="deskripsi" placeholder="Deskripsi Singkat">
+                        <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
+                        <button type="submit">Tambah</button>
+                    </form>
+                    <ul id="daftarDestinasi" class="admin-list"></ul>
+                </div>
+                <div>
+                    <h4>Paket Wisata</h4>
+                    <form id="formPaket" class="admin-form">
+                        <input type="text" name="nama" placeholder="Nama Paket" required>
+                        <input type="text" name="deskripsi" placeholder="Deskripsi Singkat">
+                        <input type="number" name="harga" placeholder="Harga (Rp)" required min="0">
+                        <button type="submit">Tambah</button>
+                    </form>
+                    <ul id="daftarPaket" class="admin-list"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3>Kelola Transaksi</h3>
+            <table id="transaksiTable">
+                <thead>
+                    <tr>
+                    <th>ID</th>
+                    <th>Nama Pemesan</th>
+                    <th>Tgl Kunjungan</th>
+                    <th>Jumlah</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="transaksiBody"></tbody>
+            </table>
+        </div>
 
       </div>
     </section>
