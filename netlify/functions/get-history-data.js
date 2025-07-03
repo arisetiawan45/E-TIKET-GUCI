@@ -1,4 +1,4 @@
-// File: netlify/functions/get-data.js
+// File: netlify/functions/get-history-data.js
 // Fungsi ini menjadi satu-satunya sumber untuk mengambil data terkait transaksi,
 // destinasi, dan paket, berdasarkan 'scope' yang diberikan.
 

@@ -83,7 +83,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
       if (!user) throw new Error('Otorisasi gagal.');
 
       // PERBAIKAN: Menggunakan satu endpoint dengan parameter 'scope'
-      const endpoint = `/.netlify/functions/get-data?scope=${scope}`;
+      const endpoint = `/.netlify/functions/get-history-data?scope=${scope}`;
       const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
       const response = await fetch(endpoint, { headers });
       

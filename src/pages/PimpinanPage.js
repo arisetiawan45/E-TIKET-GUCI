@@ -49,7 +49,7 @@ export default function PimpinanPage() {
       
       const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
       // Memanggil endpoint terpusat dengan scope yang benar
-      const response = await fetch('/.netlify/functions/get-data?scope=pimpinan', { headers });
+      const response = await fetch('/.netlify/functions/get-history-data?scope=pimpinan', { headers });
       if (!response.ok) throw new Error('Gagal mengambil data statistik');
       const data = await response.json();
 
