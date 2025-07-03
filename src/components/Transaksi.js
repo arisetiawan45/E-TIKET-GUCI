@@ -1,6 +1,7 @@
 // components/Transaksi.js
 
-// Komponen ini sekarang memanggil satu fungsi backend terpusat (get-data)
+// Komponen ini sekarang memiliki fitur lengkap: sorting, paginasi, search, dan print.
+// Menerima 'props' untuk menentukan cakupan data (scope) dan apakah fitur admin harus aktif.
 export default function Transaksi(props = { scope: 'user', adminFeatures: false }) {
   const { scope, adminFeatures } = props;
   const div = document.createElement("div");
@@ -69,12 +70,65 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
   const contentDiv = div.querySelector("#transaksiContent");
   const tbody = div.querySelector("#transaksiBody");
 
-  const printPDF = () => {
-    // ... (Logika printPDF tetap sama) ...
-  };
+  const printPDF = () => { /* ... (Logika printPDF tetap sama) ... */ };
 
   const renderTable = () => {
-    // ... (Logika renderTable tetap sama, hanya perlu memastikan kolom yang di-sort ada) ...
+    filteredTransactions = transactions.filter(trx =>
+      (trx.nama_pemesan || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+      const valA = a[sortColumn];
+      const valB = b[sortColumn];
+      let comparison = 0;
+      if (valA > valB) comparison = 1;
+      else if (valA < valB) comparison = -1;
+      return sortDirection === 'desc' ? comparison * -1 : comparison;
+    });
+    
+    const totalPages = Math.ceil(sortedTransactions.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const pageData = sortedTransactions.slice(startIndex, startIndex + rowsPerPage);
+
+    tbody.innerHTML = "";
+    if (pageData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Tidak ada data yang cocok.</td></tr>`;
+    } else {
+      pageData.forEach(trx => {
+        // --- PERBAIKAN UTAMA DI SINI ---
+        try {
+          const tr = document.createElement("tr");
+          
+          // Pengecekan data sebelum format
+          const tglKunjungan = trx.tanggal_kunjungan ? new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID') : 'N/A';
+          const waktuTransaksi = trx.tanggal_transaksi ? new Date(trx.tanggal_transaksi).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+          const totalHarga = !isNaN(trx.total) ? `Rp ${Number(trx.total).toLocaleString('id-ID')}` : 'N/A';
+
+          tr.innerHTML = `
+            <td>${trx.id_transaksi || 'N/A'}</td>
+            <td>${trx.nama_pemesan || 'N/A'}</td>
+            <td>${tglKunjungan}</td>
+            <td>${waktuTransaksi}</td>
+            <td>${trx.jumlah || 0}</td>
+            <td>${totalHarga}</td>
+            <td>${trx.status || 'N/A'}</td>
+          `;
+          tbody.appendChild(tr);
+        } catch (e) {
+            // Jika terjadi error saat merender satu baris, log errornya dan lanjutkan ke baris berikutnya
+            console.error('Gagal merender baris transaksi:', trx, e);
+        }
+      });
+    }
+
+    div.querySelector("#pageIndicator").textContent = `Halaman ${currentPage} dari ${totalPages || 1}`;
+    div.querySelector("#prevPageBtn").disabled = currentPage === 1;
+    div.querySelector("#nextPageBtn").disabled = currentPage >= totalPages;
+
+    div.querySelectorAll('#transaksiTable th').forEach(th => {
+      const indicator = th.querySelector('.sort-indicator');
+      indicator.textContent = th.dataset.sort === sortColumn ? (sortDirection === 'asc' ? '▲' : '▼') : '';
+    });
   };
 
   const fetchData = async () => {
@@ -82,8 +136,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
       const user = netlifyIdentity.currentUser();
       if (!user) throw new Error('Otorisasi gagal.');
 
-      // PERBAIKAN: Menggunakan satu endpoint dengan parameter 'scope'
-      const endpoint = `/.netlify/functions/get-history-data?scope=${scope}`;
+      const endpoint = scope === 'all' ? '/.netlify/functions/get-history-data?scope=all' : '/.netlify/functions/get-user-transactions';
       const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
       const response = await fetch(endpoint, { headers });
       
@@ -93,9 +146,7 @@ export default function Transaksi(props = { scope: 'user', adminFeatures: false 
       }
       
       const data = await response.json();
-      // PERBAIKAN: Menangani struktur data yang berbeda dari backend
-      // Jika scope 'user', data adalah array. Jika 'admin'/'pimpinan', data adalah objek.
-      transactions = (scope === 'user') ? data : data.transaksi;
+      transactions = scope === 'all' ? data.transaksi : data;
 
       loadingMessage.style.display = 'none';
       contentDiv.style.display = 'block';
