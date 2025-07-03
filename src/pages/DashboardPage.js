@@ -3,58 +3,144 @@ import Pemesanan from '../components/Pemesanan';
 import Transaksi from '../components/Transaksi';
 import AdminPage from './AdminPage';
 import PimpinanPage from './PimpinanPage';
+import Dashboard from '../components/Dashboard'; // Impor komponen Dashboard
 
 export default function DashboardPage() {
   const div = document.createElement('div');
   const user = netlifyIdentity.currentUser();
   const userRoles = user?.app_metadata?.roles || [];
 
-  // Menentukan apakah pengguna adalah Pemesan biasa atau memiliki peran khusus
-  const isPemesan = !userRoles.includes('admin') && !userRoles.includes('pimpinan');
+  const isPengunjung = !userRoles.includes('admin') && !userRoles.includes('pimpinan');
 
+  // Menambahkan styling untuk layout dasbor yang baru
   div.innerHTML = `
-    <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #f0f0f0;">
-      <div>
-        <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
-        <small>Peran: ${userRoles.join(', ') || 'Pemesan'}</small>
-      </div>
-      <button id="logoutBtn" style="padding: 8px 15px;">Logout</button>
-    </header>
-    <nav id="main-nav" style="padding: 20px; text-align: center; border-bottom: 1px solid #ccc;"></nav>
-    <main id="content" style="padding: 20px;"></main>
+    <style>
+      .dashboard-layout {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: #f4f7f6;
+      }
+      .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      .dashboard-header .user-info h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #333;
+      }
+      .dashboard-header .user-info small {
+        color: #666;
+        font-size: 0.85rem;
+      }
+      #logoutBtn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      #logoutBtn:hover {
+        background-color: #c82333;
+      }
+      .dashboard-nav {
+        background-color: #ffffff;
+        padding: 0 2rem;
+        border-bottom: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      }
+      .dashboard-nav .nav-links {
+        display: flex;
+        gap: 10px;
+      }
+      .dashboard-nav .nav-link {
+        padding: 15px 20px;
+        text-decoration: none;
+        color: #555;
+        font-weight: 500;
+        border-bottom: 3px solid transparent;
+        transition: color 0.2s, border-color 0.2s;
+      }
+      .dashboard-nav .nav-link:hover {
+        color: #007bff;
+      }
+      .dashboard-nav .nav-link.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+      }
+      .dashboard-content {
+        padding: 20px 40px;
+        flex-grow: 1;
+      }
+    </style>
+    <div class="dashboard-layout">
+      <header class="dashboard-header">
+        <div class="user-info">
+          <h3>${user.user_metadata.full_name || user.email}</h3>
+          <small>Peran: ${userRoles.join(', ') || 'Pengunjung'}</small>
+        </div>
+        <button id="logoutBtn">Logout</button>
+      </header>
+      <nav id="main-nav" class="dashboard-nav">
+        <div class="nav-links">
+          <!-- Link navigasi akan dibuat oleh JavaScript -->
+        </div>
+      </nav>
+      <main id="content" class="dashboard-content"></main>
+    </div>
   `;
 
-  const nav = div.querySelector('#main-nav');
+  const navLinksContainer = div.querySelector('.nav-links');
   const contentArea = div.querySelector('#content');
   
   // --- Navigasi menggunakan <a> dengan Pengecekan Peran ---
-  // PERBAIKAN: Link untuk Pemesan hanya muncul jika perannya adalah Pemesan.
-  nav.innerHTML = `
-    ${isPemesan ? `<a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>` : ''}
-    ${isPemesan ? `<a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>` : ''}
-    ${userRoles.includes('admin') ? `<a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>` : ''}
-    ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link" style="margin: 0 10px;">Halaman Pimpinan</a>` : ''}
-  `;
+  // Menu navigasi dibuat secara dinamis berdasarkan peran
+  let navHTML = '';
+  if (isPengunjung) {
+    navHTML += `<a href="#/dashboard/home" class="nav-link">Beranda</a>`;
+    navHTML += `<a href="#/dashboard/pesan" class="nav-link">Pesan Tiket</a>`;
+    navHTML += `<a href="#/dashboard/transaksi" class="nav-link">Riwayat Transaksi</a>`;
+  }
+  if (userRoles.includes('admin')) {
+    navHTML += `<a href="#/dashboard/admin" class="nav-link">Kelola Situs</a>`;
+  }
+  if (userRoles.includes('pimpinan')) {
+    navHTML += `<a href="#/dashboard/pimpinan" class="nav-link">Laporan</a>`;
+  }
+  navLinksContainer.innerHTML = navHTML;
   
   // --- SUB-ROUTER untuk konten di dalam Dashboard ---
   const renderSubPage = () => {
-    // PERBAIKAN: Halaman default ditentukan berdasarkan peran pengguna.
-    let defaultSubpath = 'pesan';
-    if (userRoles.includes('admin')) {
-      defaultSubpath = 'admin';
-    } else if (userRoles.includes('pimpinan')) {
-      defaultSubpath = 'pimpinan';
-    }
-    
+    let defaultSubpath = isPengunjung ? 'home' : (userRoles.includes('admin') ? 'admin' : 'pimpinan');
     const subpath = window.location.hash.split('/')[2] || defaultSubpath;
     
+    // Menandai link navigasi yang aktif
+    div.querySelectorAll('.nav-link').forEach(link => {
+      if (link.href.endsWith(subpath)) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+
     contentArea.innerHTML = ''; // Kosongkan konten
 
     switch(subpath) {
+      case 'home':
+        if (isPengunjung) contentArea.appendChild(Dashboard());
+        else window.location.hash = `#/dashboard/${defaultSubpath}`;
+        break;
       case 'pesan':
       case 'transaksi':
-        // PERBAIKAN: Hanya Pemesan yang bisa mengakses halaman ini.
-        if (isPemesan) {
+        if (isPengunjung) {
           if (subpath === 'pesan') {
             const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
             contentArea.appendChild(Pemesanan(navigateToTransaksi));
@@ -62,41 +148,26 @@ export default function DashboardPage() {
             contentArea.appendChild(Transaksi());
           }
         } else {
-          // Jika admin/pimpinan mencoba akses, arahkan ke halaman default mereka.
           window.location.hash = `#/dashboard/${defaultSubpath}`;
         }
         break;
       case 'admin':
-        if (userRoles.includes('admin')) {
-          contentArea.appendChild(AdminPage());
-        } else {
-          // Jika pengguna biasa mencoba akses, arahkan ke halaman default.
-          contentArea.innerHTML = `<p>Akses ditolak. Anda bukan admin.</p>`;
-          window.location.hash = '#/dashboard/pesan';
-        }
+        if (userRoles.includes('admin')) contentArea.appendChild(AdminPage());
+        else window.location.hash = `#/dashboard/${defaultSubpath}`;
         break;
       case 'pimpinan':
-        if (userRoles.includes('pimpinan')) {
-          contentArea.appendChild(PimpinanPage());
-        } else {
-          contentArea.innerHTML = `<p>Akses ditolak. Anda bukan pimpinan.</p>`;
-          window.location.hash = '#/dashboard/pesan';
-        }
+        if (userRoles.includes('pimpinan')) contentArea.appendChild(PimpinanPage());
+        else window.location.hash = `#/dashboard/${defaultSubpath}`;
         break;
       default:
-        // Jika sub-rute tidak ditemukan, kembali ke halaman default berdasarkan peran.
         window.location.hash = `#/dashboard/${defaultSubpath}`;
         break;
     }
   };
 
-  // Dengarkan perubahan hash untuk menavigasi antar sub-halaman
   window.addEventListener('hashchange', renderSubPage);
-
-  // Render halaman default saat Dashboard pertama kali dimuat
   renderSubPage();
   
-  // Event listener untuk tombol logout tetap sama
   div.querySelector('#logoutBtn').addEventListener('click', () => {
     netlifyIdentity.logout();
   });
