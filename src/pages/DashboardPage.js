@@ -13,7 +13,7 @@ export default function DashboardPage() {
     <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #f0f0f0;">
       <div>
         <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
-        <small>Peran: ${userRoles.join(', ') || 'pengunjung'} (Mode Development)</small>
+        <small>Peran: ${userRoles.join(', ') || 'pengunjung'}</small>
       </div>
       <button id="logoutBtn" style="padding: 8px 15px;">Logout</button>
     </header>
@@ -24,19 +24,19 @@ export default function DashboardPage() {
   const nav = div.querySelector('#main-nav');
   const contentArea = div.querySelector('#content');
   
-  // --- Navigasi menggunakan <a> (Anchor/Link) ---
-  // Perubahan: Tampilkan link "Halaman Admin" tanpa memeriksa peran
+  // --- Navigasi menggunakan <a> dengan Pengecekan Peran ---
+  // PERBAIKAN: Link Admin dan Pimpinan hanya muncul jika pengguna memiliki peran yang sesuai.
   nav.innerHTML = `
     <a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>
     <a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>
-    <a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>
+    ${userRoles.includes('admin') ? `<a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>` : ''}
     ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link" style="margin: 0 10px;">Halaman Pimpinan</a>` : ''}
   `;
   
   // --- SUB-ROUTER untuk konten di dalam Dashboard ---
   const renderSubPage = () => {
-    // Perubahan: Jadikan 'admin' sebagai halaman default
-    const subpath = window.location.hash.split('/')[2] || 'admin';
+    // PERBAIKAN: Halaman default dikembalikan ke 'pesan' untuk pengguna biasa.
+    const subpath = window.location.hash.split('/')[2] || 'pesan';
     
     contentArea.innerHTML = ''; // Kosongkan konten
 
@@ -49,20 +49,27 @@ export default function DashboardPage() {
         contentArea.appendChild(Transaksi());
         break;
       case 'admin':
-        // Perubahan: Hapus if-check, langsung render AdminPage
-        contentArea.appendChild(AdminPage());
+        // PERBAIKAN: Menambahkan kembali pengecekan peran.
+        if (userRoles.includes('admin')) {
+          contentArea.appendChild(AdminPage());
+        } else {
+          // Jika pengguna biasa mencoba akses, arahkan ke halaman default.
+          contentArea.innerHTML = `<p>Akses ditolak. Anda bukan admin.</p>`;
+          window.location.hash = '#/dashboard/pesan';
+        }
         break;
       case 'pimpinan':
+        // PERBAIKAN: Menambahkan kembali pengecekan peran.
         if (userRoles.includes('pimpinan')) {
           contentArea.appendChild(PimpinanPage());
         } else {
-          // Jika pengguna biasa mencoba akses pimpinan, arahkan ke admin
-           window.location.hash = '#/dashboard/admin';
+          contentArea.innerHTML = `<p>Akses ditolak. Anda bukan pimpinan.</p>`;
+          window.location.hash = '#/dashboard/pesan';
         }
         break;
       default:
-        // Jika sub-rute tidak ditemukan, kembali ke halaman admin
-        window.location.hash = '#/dashboard/admin';
+        // Jika sub-rute tidak ditemukan, kembali ke halaman default.
+        window.location.hash = '#/dashboard/pesan';
         break;
     }
   };
