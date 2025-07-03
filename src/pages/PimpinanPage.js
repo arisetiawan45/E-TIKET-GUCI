@@ -1,5 +1,5 @@
 // pages/PimpinanPage.js
-import Transaksi from '../components/Transaksi'; // Impor komponen Transaksi yang reusable
+import Transaksi from '../components/Transaksi'; // 1. Impor komponen Transaksi yang reusable
 
 export default function PimpinanPage() {
   const div = document.createElement("div");
@@ -33,7 +33,7 @@ export default function PimpinanPage() {
           </div>
         </div>
         
-        <!-- Area untuk menampilkan komponen Transaksi -->
+        <!-- 2. Area untuk menampilkan komponen Transaksi -->
         <div id="transaksi-component-wrapper"></div>
       </div>
     </section>
@@ -44,7 +44,12 @@ export default function PimpinanPage() {
     const loadingMessage = div.querySelector("#loading-message");
     const pimpinanContent = div.querySelector("#pimpinan-content");
     try {
-      const response = await fetch('/.netlify/functions/get-admin-data');
+      const user = netlifyIdentity.currentUser();
+      if (!user) throw new Error('Otorisasi gagal.');
+      
+      const headers = { 'Authorization': `Bearer ${user.token.access_token}` };
+      // Memanggil endpoint terpusat dengan scope yang benar
+      const response = await fetch('/.netlify/functions/get-data?scope=pimpinan', { headers });
       if (!response.ok) throw new Error('Gagal mengambil data statistik');
       const data = await response.json();
 
@@ -56,17 +61,22 @@ export default function PimpinanPage() {
       loadingMessage.style.display = 'none';
       pimpinanContent.style.display = 'block';
 
+      // Panggil dan tampilkan komponen Transaksi, oper data yang sudah diambil
+      const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
+      transaksiWrapper.appendChild(
+        Transaksi({ 
+          initialData: data.transaksi, // Berikan data transaksi langsung
+          adminFeatures: true, // Aktifkan fitur cetak dan cari
+          scope: 'pimpinan'
+        })
+      );
+
     } catch (error) {
       loadingMessage.textContent = `Error: ${error.message}`;
     }
   };
 
-  // Panggil dan tampilkan komponen Transaksi
-  const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
-  // Kita panggil dengan scope 'pimpinan' (atau 'all') dan adminFeatures 'true' untuk menampilkan semua fitur
-  transaksiWrapper.appendChild(Transaksi({ scope: 'pimpinan', adminFeatures: true }));
-
-  // Ambil data statistik
+  // Ambil data statistik dan render komponen
   fetchStats();
 
   return div;

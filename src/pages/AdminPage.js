@@ -117,7 +117,8 @@ export default function AdminPage() {
   // --- Fungsi API (disederhanakan) ---
   const fetchData = async () => {
     try {
-      const response = await fetch('/.netlify/functions/get-admin-data');
+      // PERBAIKAN: Menggunakan endpoint terpusat dengan scope 'admin'
+      const response = await fetch('/.netlify/functions/get-data?scope=admin');
       if (!response.ok) throw new Error('Gagal mengambil data dari server');
       const data = await response.json();
 
