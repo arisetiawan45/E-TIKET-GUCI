@@ -9,6 +9,9 @@ export default function DashboardPage() {
   const user = netlifyIdentity.currentUser();
   const userRoles = user?.app_metadata?.roles || [];
 
+  // Menentukan apakah pengguna adalah pengunjung biasa atau memiliki peran khusus
+  const isPengunjung = !userRoles.includes('admin') && !userRoles.includes('pimpinan');
+
   div.innerHTML = `
     <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #f0f0f0;">
       <div>
@@ -25,31 +28,45 @@ export default function DashboardPage() {
   const contentArea = div.querySelector('#content');
   
   // --- Navigasi menggunakan <a> dengan Pengecekan Peran ---
-  // PERBAIKAN: Link Admin dan Pimpinan hanya muncul jika pengguna memiliki peran yang sesuai.
+  // PERBAIKAN: Link untuk pengunjung hanya muncul jika perannya adalah pengunjung.
   nav.innerHTML = `
-    <a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>
-    <a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>
+    ${isPengunjung ? `<a href="#/dashboard/pesan" class="nav-link" style="margin: 0 10px;">Pesan Tiket</a>` : ''}
+    ${isPengunjung ? `<a href="#/dashboard/transaksi" class="nav-link" style="margin: 0 10px;">Lihat Transaksi</a>` : ''}
     ${userRoles.includes('admin') ? `<a href="#/dashboard/admin" class="nav-link" style="margin: 0 10px;">Halaman Admin</a>` : ''}
     ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link" style="margin: 0 10px;">Halaman Pimpinan</a>` : ''}
   `;
   
   // --- SUB-ROUTER untuk konten di dalam Dashboard ---
   const renderSubPage = () => {
-    // PERBAIKAN: Halaman default dikembalikan ke 'pesan' untuk pengguna biasa.
-    const subpath = window.location.hash.split('/')[2] || 'pesan';
+    // PERBAIKAN: Halaman default ditentukan berdasarkan peran pengguna.
+    let defaultSubpath = 'pesan';
+    if (userRoles.includes('admin')) {
+      defaultSubpath = 'admin';
+    } else if (userRoles.includes('pimpinan')) {
+      defaultSubpath = 'pimpinan';
+    }
+    
+    const subpath = window.location.hash.split('/')[2] || defaultSubpath;
     
     contentArea.innerHTML = ''; // Kosongkan konten
 
     switch(subpath) {
       case 'pesan':
-        const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
-        contentArea.appendChild(Pemesanan(navigateToTransaksi));
-        break;
       case 'transaksi':
-        contentArea.appendChild(Transaksi());
+        // PERBAIKAN: Hanya pengunjung yang bisa mengakses halaman ini.
+        if (isPengunjung) {
+          if (subpath === 'pesan') {
+            const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
+            contentArea.appendChild(Pemesanan(navigateToTransaksi));
+          } else {
+            contentArea.appendChild(Transaksi());
+          }
+        } else {
+          // Jika admin/pimpinan mencoba akses, arahkan ke halaman default mereka.
+          window.location.hash = `#/dashboard/${defaultSubpath}`;
+        }
         break;
       case 'admin':
-        // PERBAIKAN: Menambahkan kembali pengecekan peran.
         if (userRoles.includes('admin')) {
           contentArea.appendChild(AdminPage());
         } else {
@@ -59,7 +76,6 @@ export default function DashboardPage() {
         }
         break;
       case 'pimpinan':
-        // PERBAIKAN: Menambahkan kembali pengecekan peran.
         if (userRoles.includes('pimpinan')) {
           contentArea.appendChild(PimpinanPage());
         } else {
@@ -68,8 +84,8 @@ export default function DashboardPage() {
         }
         break;
       default:
-        // Jika sub-rute tidak ditemukan, kembali ke halaman default.
-        window.location.hash = '#/dashboard/pesan';
+        // Jika sub-rute tidak ditemukan, kembali ke halaman default berdasarkan peran.
+        window.location.hash = `#/dashboard/${defaultSubpath}`;
         break;
     }
   };
