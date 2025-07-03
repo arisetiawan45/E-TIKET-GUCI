@@ -1,5 +1,3 @@
-/ components/Transaksi.js
-
 export default function Transaksi() {
   const div = document.createElement("div");
   // Menambahkan styling dasar
