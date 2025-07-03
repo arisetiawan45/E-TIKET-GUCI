@@ -1,171 +1,190 @@
-// src/pages/AdminPage.js
+// DashboardPage dengan Halaman Admin Digabung & Desain Modern
 
-export function AdminPage(navigateToDashboard) {
-  const div = document.createElement("div");
-  div.className = "admin-container";
+import Pemesanan from '../components/Pemesanan';
+import Transaksi from '../components/Transaksi';
 
-  const transaksiData = JSON.parse(localStorage.getItem("transaksi")) || [];
-  const totalTransaksi = transaksiData.length;
-  const totalTiket = transaksiData.reduce(
-    (total, trx) => total + parseInt(trx.jumlah),
-    0
-  );
-
-  let destinasiList = JSON.parse(localStorage.getItem("destinasiList")) || [
-    "Curug Guci",
-    "Pemandian Air Panas",
-    "Gunung Slamet"
-  ];
-
-  let paketList = JSON.parse(localStorage.getItem("paketList")) || [
-    "Paket 1 - Curug + Air Panas",
-    "Paket 2 - Gunung + Air Panas"
-  ];
-
-  let hargaList = JSON.parse(localStorage.getItem("hargaList")) || {};
+export default function DashboardPage() {
+  const div = document.createElement('div');
+  const user = netlifyIdentity.currentUser();
+  const userRoles = user?.app_metadata?.roles || [];
 
   div.innerHTML = `
-    <section style="padding: 20px;">
-      <h2>Halaman Admin</h2>
-      <p>Selamat datang, Admin!</p>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+      }
 
-      <div style="margin-top: 20px;">
-        <p><strong>Total Transaksi:</strong> ${totalTransaksi}</p>
-        <p><strong>Total Tiket Terjual:</strong> ${totalTiket}</p>
+      body {
+        margin: 0;
+        background-color: #f4f7fa;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 25px 30px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      }
+
+      header h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      header small {
+        font-size: 13px;
+        opacity: 0.9;
+      }
+
+      #logoutBtn {
+        background-color: white;
+        color: #333;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 18px;
+        cursor: pointer;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        transition: background-color 0.3s ease;
+      }
+
+      #logoutBtn:hover {
+        background-color: #ddd;
+      }
+
+      nav#main-nav {
+        background-color: #ffffff;
+        display: flex;
+        justify-content: center;
+        padding: 15px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+
+      .nav-link {
+        margin: 0 15px;
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+        position: relative;
+        padding-bottom: 5px;
+      }
+
+      .nav-link:hover {
+        color: #667eea;
+      }
+
+      .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 2px;
+        width: 100%;
+        background-color: #667eea;
+      }
+
+      main#content {
+        padding: 30px;
+        min-height: 75vh;
+        background-color: #f4f7fa;
+      }
+
+      .card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+      }
+    </style>
+
+    <header>
+      <div>
+        <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
+        <small>Peran: ${userRoles.join(', ') || 'pengunjung'} (Mode Development)</small>
       </div>
+      <button id="logoutBtn">Logout</button>
+    </header>
 
-      <hr>
-      <h3>Kelola Destinasi Wisata</h3>
-      <form id="formDestinasi">
-        <input type="text" id="inputDestinasi" placeholder="Nama Destinasi" required>
-        <button type="submit">Tambah</button>
-      </form>
-      <ul id="daftarDestinasi"></ul>
-
-      <hr>
-      <h3>Kelola Paket Wisata</h3>
-      <form id="formPaket">
-        <input type="text" id="inputPaket" placeholder="Nama Paket" required>
-        <button type="submit">Tambah</button>
-      </form>
-      <ul id="daftarPaket"></ul>
-
-      <hr>
-      <h3>Kelola Harga Tiket</h3>
-      <form id="formHarga">
-        <input type="text" id="inputHargaNama" placeholder="Nama Destinasi/Paket" required>
-        <input type="number" id="inputHargaNilai" placeholder="Harga (Rp)" required>
-        <button type="submit">Simpan</button>
-      </form>
-      <ul id="daftarHarga"></ul>
-
-      <br>
-      <button id="btnDashboard">Kembali ke Dashboard</button>
-    </section>
+    <nav id="main-nav"></nav>
+    <main id="content"></main>
   `;
 
-  function renderList(list, containerId, key) {
-    const ul = div.querySelector(containerId);
-    ul.innerHTML = "";
-    list.forEach((item, index) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${item}</span>
-        <button data-index="${index}" data-type="edit">Edit</button>
-        <button data-index="${index}" data-type="delete">Hapus</button>
-      `;
-      ul.appendChild(li);
-    });
-  }
+  const nav = div.querySelector('#main-nav');
+  const contentArea = div.querySelector('#content');
 
-  function saveAndRender(list, key, containerId) {
-    localStorage.setItem(key, JSON.stringify(list));
-    renderList(list, containerId, key);
-  }
+  nav.innerHTML = `
+    <a href="#/dashboard/pesan" class="nav-link">Pesan Tiket</a>
+    <a href="#/dashboard/transaksi" class="nav-link">Lihat Transaksi</a>
+    <a href="#/dashboard/admin" class="nav-link">Halaman Admin</a>
+    ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link">Halaman Pimpinan</a>` : ''}
+  `;
 
-  function renderHarga() {
-    const ul = div.querySelector("#daftarHarga");
-    ul.innerHTML = "";
-    Object.entries(hargaList).forEach(([nama, harga], index) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${nama} - Rp${parseInt(harga).toLocaleString('id-ID')}</span>
-        <button data-nama="${nama}" data-type="hapusHarga">Hapus</button>
-      `;
-      ul.appendChild(li);
-    });
-  }
-
-  div.querySelector("#formDestinasi").addEventListener("submit", e => {
-    e.preventDefault();
-    const input = div.querySelector("#inputDestinasi").value.trim();
-    if (input && !destinasiList.includes(input)) {
-      destinasiList.push(input);
-      saveAndRender(destinasiList, "destinasiList", "#daftarDestinasi");
-      e.target.reset();
-    }
-  });
-
-  div.querySelector("#formPaket").addEventListener("submit", e => {
-    e.preventDefault();
-    const input = div.querySelector("#inputPaket").value.trim();
-    if (input && !paketList.includes(input)) {
-      paketList.push(input);
-      saveAndRender(paketList, "paketList", "#daftarPaket");
-      e.target.reset();
-    }
-  });
-
-  div.querySelector("#formHarga").addEventListener("submit", e => {
-    e.preventDefault();
-    const nama = div.querySelector("#inputHargaNama").value.trim();
-    const nilai = parseInt(div.querySelector("#inputHargaNilai").value);
-    if (nama && nilai > 0) {
-      hargaList[nama] = nilai;
-      localStorage.setItem("hargaList", JSON.stringify(hargaList));
-      renderHarga();
-      e.target.reset();
-    }
-  });
-
-  div.addEventListener("click", e => {
-    const type = e.target.dataset.type;
-    const index = parseInt(e.target.dataset.index);
-    const nama = e.target.dataset.nama;
-    const parentUl = e.target.closest("ul");
-
-    if (type === "hapusHarga" && nama) {
-      delete hargaList[nama];
-      localStorage.setItem("hargaList", JSON.stringify(hargaList));
-      renderHarga();
-    } else if (type && !isNaN(index)) {
-      let list, key, containerId;
-      if (parentUl.id === "daftarDestinasi") {
-        list = destinasiList;
-        key = "destinasiList";
-        containerId = "#daftarDestinasi";
-      } else {
-        list = paketList;
-        key = "paketList";
-        containerId = "#daftarPaket";
+  const updateActiveLink = () => {
+    const links = nav.querySelectorAll('.nav-link');
+    links.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === window.location.hash) {
+        link.classList.add('active');
       }
+    });
+  };
 
-      if (type === "delete") {
-        list.splice(index, 1);
-      } else if (type === "edit") {
-        const newValue = prompt("Edit item:", list[index]);
-        if (newValue) list[index] = newValue.trim();
-      }
-      saveAndRender(list, key, containerId);
+  const AdminContent = () => {
+    const section = document.createElement('section');
+    section.className = 'card';
+    section.innerHTML = `
+      <h2>Halaman Admin</h2>
+      <p>Konten admin akan dimuat dari server (placeholder)</p>
+      <p style="margin-top: 20px; color: #777;">🔧 Fitur seperti kelola destinasi, paket wisata, dan transaksi akan tampil di sini.</p>
+    `;
+    return section;
+  };
+
+  const renderSubPage = () => {
+    const subpath = window.location.hash.split('/')[2] || 'admin';
+    contentArea.innerHTML = '';
+    updateActiveLink();
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    switch (subpath) {
+      case 'pesan':
+        const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
+        card.appendChild(Pemesanan(navigateToTransaksi));
+        break;
+      case 'transaksi':
+        card.appendChild(Transaksi());
+        break;
+      case 'admin':
+        contentArea.appendChild(AdminContent());
+        return;
+      case 'pimpinan':
+        if (userRoles.includes('pimpinan')) {
+          card.innerHTML = '<h3>Konten Pimpinan akan ditambahkan.</h3>';
+        } else {
+          window.location.hash = '#/dashboard/admin';
+          return;
+        }
+        break;
+      default:
+        window.location.hash = '#/dashboard/admin';
+        return;
     }
-  });
 
-  renderList(destinasiList, "#daftarDestinasi", "destinasiList");
-  renderList(paketList, "#daftarPaket", "paketList");
-  renderHarga();
+    contentArea.appendChild(card);
+  };
 
-  div.querySelector("#btnDashboard").addEventListener("click", () => {
-    navigateToDashboard();
+  window.addEventListener('hashchange', renderSubPage);
+  renderSubPage();
+
+  div.querySelector('#logoutBtn').addEventListener('click', () => {
+    netlifyIdentity.logout();
   });
 
   return div;
