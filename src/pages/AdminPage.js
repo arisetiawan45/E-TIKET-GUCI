@@ -1,4 +1,5 @@
 // src/pages/AdminPage.js
+import Transaksi from '../components/Transaksi'; // 1. Impor komponen Transaksi yang reusable
 
 export default function AdminPage() {
   const div = document.createElement("div");
@@ -21,7 +22,7 @@ export default function AdminPage() {
         padding-bottom: 15px;
         margin-bottom: 20px;
       }
-      .stats-container { display: flex; gap: 40px; }
+      .stats-container { display: flex; flex-wrap: wrap; gap: 40px; }
       .stats-container p { font-size: 1.1rem; margin: 0; }
       .management-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
       .admin-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
@@ -33,34 +34,10 @@ export default function AdminPage() {
       .admin-list .item-info p { margin: 4px 0 0 0; font-size: 0.85em; color: #666; }
       .admin-list .actions button { margin-left: 8px; }
       .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-      #transaksiTable { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-      #transaksiTable th, #transaksiTable td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-      #transaksiTable th { 
-        background-color: #f8f9fa; 
-        cursor: pointer; 
-        -webkit-user-select: none; /* Untuk Safari */
-        user-select: none; 
-      }
-      #transaksiTable th:hover { background-color: #e9ecef; }
-      .sort-indicator { margin-left: 5px; font-size: 0.8em; }
-      .status-select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-      .pagination-controls { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
-      .pagination-buttons button { padding: 8px 16px; cursor: pointer; }
-      .pagination-buttons button:disabled { cursor: not-allowed; opacity: 0.5; }
-      .search-bar { margin-bottom: 20px; }
-      .search-bar input { width: 300px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-
+      
       /* --- Media Query untuk HP --- */
       @media (max-width: 768px) {
         .management-grid { grid-template-columns: 1fr; gap: 30px; }
-        .search-bar input { width: 100%; box-sizing: border-box; }
-        #transaksiTable { border: 0; }
-        #transaksiTable thead { border: none; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; }
-        #transaksiTable tr { display: block; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 2px rgba(0,0,0,0.1); }
-        #transaksiTable td { display: block; text-align: right; border-bottom: 1px solid #eee; padding: 10px; }
-        #transaksiTable td:last-child { border-bottom: 0; }
-        #transaksiTable td::before { content: attr(data-label); float: left; font-weight: bold; text-transform: uppercase; }
-        .pagination-controls { flex-direction: column; gap: 15px; }
         .stats-container { flex-direction: column; gap: 10px; }
       }
     </style>
@@ -104,39 +81,17 @@ export default function AdminPage() {
             </div>
         </div>
 
-        <div class="admin-card">
-            <h3>Kelola Transaksi</h3>
-            <div class="search-bar">
-              <input type="search" id="searchInput" placeholder="Cari nama pemesan...">
-            </div>
-            <table id="transaksiTable">
-                <thead>
-                    <tr>
-                      <th data-sort="id_transaksi">ID <span class="sort-indicator"></span></th>
-                      <th data-sort="nama_pemesan">Nama Pemesan <span class="sort-indicator"></span></th>
-                      <th data-sort="tanggal_kunjungan">Tgl Kunjungan <span class="sort-indicator"></span></th>
-                      <th data-sort="jumlah">Jumlah <span class="sort-indicator"></span></th>
-                      <th data-sort="total">Total <span class="sort-indicator"></span></th>
-                      <th data-sort="status">Status <span class="sort-indicator"></span></th>
-                    </tr>
-                </thead>
-                <tbody id="transaksiBody"></tbody>
-            </table>
-            <div class="pagination-controls">
-                <span id="pageIndicator"></span>
-                <div class="pagination-buttons">
-                    <button id="prevPageBtn" disabled>Sebelumnya</button>
-                    <button id="nextPageBtn" disabled>Berikutnya</button>
-                </div>
-            </div>
-        </div>
+        <!-- 2. Area untuk menampilkan komponen Transaksi -->
+        <div id="transaksi-component-wrapper"></div>
+      
       </div>
     </section>
   `;
 
-  // --- State Aplikasi ---
-  let destinasiList = [], paketList = [], transaksiList = [], filteredTransaksi = [];
-  let currentPage = 1, rowsPerPage = 10, sortColumn = 'id_transaksi', sortDirection = 'desc', searchTerm = '';
+  // --- State Aplikasi (disederhanakan) ---
+  let destinasiList = [];
+  let paketList = [];
+  // Logika transaksi (tabel, paginasi, sort) sekarang dipindahkan ke Transaksi.js
 
   // --- Fungsi Render ---
   const renderList = (list, containerId, type) => {
@@ -157,64 +112,13 @@ export default function AdminPage() {
       ul.appendChild(li);
     });
   };
+
   const reRenderAll = () => {
     renderList(destinasiList, "#daftarDestinasi", "destinasi");
     renderList(paketList, "#daftarPaket", "paket");
   };
   
-  const renderTransaksi = () => {
-    const tbody = div.querySelector("#transaksiBody");
-    const pageIndicator = div.querySelector("#pageIndicator");
-    const prevBtn = div.querySelector("#prevPageBtn");
-    const nextBtn = div.querySelector("#nextPageBtn");
-    tbody.innerHTML = "";
-
-    filteredTransaksi = transaksiList.filter(trx => 
-        (trx.nama_pemesan || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const sortedTransaksi = [...filteredTransaksi].sort((a, b) => {
-        const valA = a[sortColumn];
-        const valB = b[sortColumn];
-        let comparison = 0;
-        if (valA > valB) comparison = 1; else if (valA < valB) comparison = -1;
-        return sortDirection === 'desc' ? comparison * -1 : comparison;
-    });
-
-    const totalPages = Math.ceil(sortedTransaksi.length / rowsPerPage);
-    const pageData = sortedTransaksi.slice((currentPage - 1) * rowsPerPage, (currentPage - 1) * rowsPerPage + rowsPerPage);
-    
-    pageData.forEach(trx => {
-      const tr = document.createElement("tr");
-      // PENYESUAIAN: Menambahkan atribut data-label untuk tampilan mobile
-      tr.innerHTML = `
-        <td data-label="ID">${trx.id_transaksi}</td>
-        <td data-label="Nama Pemesan">${trx.nama_pemesan || 'N/A'}</td>
-        <td data-label="Tgl Kunjungan">${new Date(trx.tanggal_kunjungan).toLocaleDateString('id-ID')}</td>
-        <td data-label="Jumlah">${trx.jumlah}</td>
-        <td data-label="Total">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
-        <td data-label="Status">
-          <select class="status-select" data-id="${trx.id_transaksi}">
-            <option value="Pending" ${trx.status === 'Pending' ? 'selected' : ''}>Pending</option>
-            <option value="Dibayar" ${trx.status === 'Dibayar' ? 'selected' : ''}>Dibayar</option>
-          </select>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-    
-    pageIndicator.textContent = `Halaman ${currentPage} dari ${totalPages || 1}`;
-    prevBtn.disabled = currentPage === 1;
-    nextBtn.disabled = currentPage >= totalPages;
-
-    div.querySelectorAll('#transaksiTable th').forEach(th => {
-        const indicator = th.querySelector('.sort-indicator');
-        if (th.dataset.sort === sortColumn) indicator.textContent = sortDirection === 'asc' ? '▲' : '▼';
-        else indicator.textContent = '';
-    });
-  };
-
-  // --- Fungsi API ---
+  // --- Fungsi API (disederhanakan) ---
   const fetchData = async () => {
     try {
       const response = await fetch('/.netlify/functions/get-admin-data');
@@ -223,13 +127,12 @@ export default function AdminPage() {
 
       destinasiList = data.destinasi;
       paketList = data.paket;
-      transaksiList = data.transaksi;
       
-      div.querySelector("#totalTransaksi").textContent = transaksiList.length;
-      div.querySelector("#totalTiket").textContent = transaksiList.reduce((sum, trx) => sum + (trx.jumlah || 0), 0);
+      // Update statistik
+      div.querySelector("#totalTransaksi").textContent = data.transaksi.length;
+      div.querySelector("#totalTiket").textContent = data.transaksi.reduce((sum, trx) => sum + (trx.jumlah || 0), 0);
 
       reRenderAll();
-      renderTransaksi();
 
       div.querySelector("#loading-message").style.display = 'none';
       div.querySelector("#admin-content").style.display = 'block';
@@ -322,68 +225,15 @@ export default function AdminPage() {
         }
       }
     });
-
-    div.querySelector("#transaksiTable").addEventListener('change', async (e) => {
-        if (e.target.classList.contains('status-select')) {
-            const id = e.target.dataset.id;
-            const status = e.target.value;
-            
-            e.target.disabled = true;
-            try {
-                const response = await fetch('/.netlify/functions/update-transaction-status', {
-                    method: 'PUT',
-                    body: JSON.stringify({ id, status })
-                });
-                if (!response.ok) throw new Error('Gagal mengupdate status');
-            } catch (error) {
-                alert(error.message);
-                e.target.value = transaksiList.find(t => t.id_transaksi == id).status;
-            } finally {
-                e.target.disabled = false;
-            }
-        }
-    });
-    // Listener untuk Paginasi
-    div.querySelector("#prevPageBtn").addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            renderTransaksi();
-        }
-    });
-    div.querySelector("#nextPageBtn").addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredTransaksi.length / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            renderTransaksi();
-        }
-    });
-
-    // Listener untuk Sorting
-    div.querySelectorAll('#transaksiTable th[data-sort]').forEach(header => {
-        header.addEventListener('click', () => {
-            const newSortColumn = header.dataset.sort;
-            if (sortColumn === newSortColumn) {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortColumn = newSortColumn;
-                sortDirection = 'asc';
-            }
-            currentPage = 1; // Kembali ke halaman pertama setelah sort
-            renderTransaksi();
-        });
-    });
-
-    // Listener untuk Search Input
-    div.querySelector('#searchInput').addEventListener('input', (e) => {
-        searchTerm = e.target.value;
-        currentPage = 1; // Selalu kembali ke halaman pertama saat mencari
-        renderTransaksi();
-    });
   };
 
   // --- Inisialisasi ---
   fetchData();
   setupEventListeners();
+
+  // 3. Panggil dan tampilkan komponen Transaksi di dalam wrapper
+  const transaksiWrapper = div.querySelector("#transaksi-component-wrapper");
+  transaksiWrapper.appendChild(Transaksi({ scope: 'all', adminFeatures: true }));
 
   return div;
 }
