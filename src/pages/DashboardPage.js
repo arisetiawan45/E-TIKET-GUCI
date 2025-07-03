@@ -1,127 +1,183 @@
-// pages/DashboardPage.js
 import Pemesanan from '../components/Pemesanan';
 import Transaksi from '../components/Transaksi';
 import AdminPage from './AdminPage';
 import PimpinanPage from './PimpinanPage';
-import Dashboard from '../components/Dashboard';
 
 export default function DashboardPage() {
   const div = document.createElement('div');
   const user = netlifyIdentity.currentUser();
   const userRoles = user?.app_metadata?.roles || [];
 
-  const isPengunjung = !userRoles.includes('admin') && !userRoles.includes('pimpinan');
-
   div.innerHTML = `
     <style>
-      .dashboard-layout { display: flex; flex-direction: column; min-height: 100vh; background-color: #f4f7f6; }
-      .dashboard-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background-color: #ffffff; border-bottom: 1px solid #e0e0e0; }
-      .dashboard-header .user-info h3 { margin: 0; font-size: 1.1rem; color: #333; }
-      .dashboard-header .user-info small { color: #666; font-size: 0.85rem; }
-      #logoutBtn { padding: 8px 16px; font-size: 0.9rem; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
-      #logoutBtn:hover { background-color: #c82333; }
-      .dashboard-nav { background-color: #ffffff; padding: 0 2rem; border-bottom: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-      .dashboard-nav .nav-links { display: flex; gap: 10px; flex-wrap: wrap; }
-      .dashboard-nav .nav-link { padding: 15px 20px; text-decoration: none; color: #555; font-weight: 500; border-bottom: 3px solid transparent; transition: color 0.2s, border-color 0.2s; }
-      .dashboard-nav .nav-link:hover { color: #007bff; }
-      .dashboard-nav .nav-link.active { color: #007bff; border-bottom-color: #007bff; }
-      .dashboard-content { padding: 20px 40px; flex-grow: 1; }
-      /* --- Media Query untuk HP --- */
-      @media (max-width: 768px) {
-        .dashboard-header { flex-direction: column; gap: 10px; text-align: center; padding: 1rem; }
-        .dashboard-nav { padding: 0 10px; }
-        .dashboard-nav .nav-links { justify-content: center; }
-        .dashboard-nav .nav-link { padding: 12px 8px; font-size: 0.85rem; }
-        .dashboard-content { padding: 15px; }
+      * {
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background-color: #eef3f7;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 25px 30px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      }
+
+      header h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      header small {
+        font-size: 13px;
+        opacity: 0.9;
+      }
+
+      #logoutBtn {
+        background-color: white;
+        color: #333;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 18px;
+        cursor: pointer;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        transition: background-color 0.3s ease;
+      }
+
+      #logoutBtn:hover {
+        background-color: #ddd;
+      }
+
+      nav#main-nav {
+        background-color: #ffffff;
+        display: flex;
+        justify-content: center;
+        padding: 15px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+
+      .nav-link {
+        margin: 0 15px;
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+        position: relative;
+        padding-bottom: 5px;
+      }
+
+      .nav-link:hover {
+        color: #667eea;
+      }
+
+      .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 2px;
+        width: 100%;
+        background-color: #667eea;
+      }
+
+      main#content {
+        padding: 30px;
+        min-height: 75vh;
+        background-color: #eef3f7;
+      }
+
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
       }
     </style>
-    <div class="dashboard-layout">
-      <header class="dashboard-header">
-        <div class="user-info">
-          <h3>${user.user_metadata.full_name || user.email}</h3>
-          <small>Peran: ${userRoles.join(', ') || 'Pengunjung'}</small>
-        </div>
-        <button id="logoutBtn">Logout</button>
-      </header>
-      <nav id="main-nav" class="dashboard-nav">
-        <div class="nav-links"></div>
-      </nav>
-      <main id="content" class="dashboard-content"></main>
-    </div>
+
+    <header>
+      <div>
+        <h3>Selamat Datang, ${user.user_metadata.full_name || user.email}</h3>
+        <small>Peran: ${userRoles.join(', ') || 'pengunjung'} (Mode Development)</small>
+      </div>
+      <button id="logoutBtn">Logout</button>
+    </header>
+
+    <nav id="main-nav"></nav>
+    <main id="content"></main>
   `;
 
-  const navLinksContainer = div.querySelector('.nav-links');
+  const nav = div.querySelector('#main-nav');
   const contentArea = div.querySelector('#content');
-  
-  let navHTML = '';
-  if (isPengunjung) {
-    navHTML += `<a href="#/dashboard/home" class="nav-link">Beranda</a>`;
-    navHTML += `<a href="#/dashboard/pesan" class="nav-link">Pesan Tiket</a>`;
-    navHTML += `<a href="#/dashboard/transaksi" class="nav-link">Riwayat Transaksi</a>`;
-  }
-  if (userRoles.includes('admin')) {
-    navHTML += `<a href="#/dashboard/admin" class="nav-link">Kelola Situs</a>`;
-  }
-  if (userRoles.includes('pimpinan')) {
-    navHTML += `<a href="#/dashboard/pimpinan" class="nav-link">Laporan</a>`;
-  }
-  
-  navHTML += `<a href="#/tutorial" class="nav-link">Tutorial</a>`;
-  navHTML += `<a href="#/tanya-jawab" class="nav-link">Tanya Jawab</a>`;
-  navHTML += `<a href="#/kontak" class="nav-link">Kontak</a>`;
-  navLinksContainer.innerHTML = navHTML;
-  
-  const renderSubPage = () => {
-    let defaultSubpath = isPengunjung ? 'home' : (userRoles.includes('admin') ? 'admin' : 'pimpinan');
-    const path = window.location.hash.split('/');
-    const mainPath = path[1];
-    const subpath = path[2] || defaultSubpath;
-    
-    div.querySelectorAll('.nav-link').forEach(link => {
-      const linkPath = new URL(link.href).hash;
-      if (linkPath === `#/${mainPath}/${subpath}` || linkPath === `#/${mainPath}`) {
+
+  // Navigasi utama
+  nav.innerHTML = `
+    <a href="#/dashboard/pesan" class="nav-link">Pesan Tiket</a>
+    <a href="#/dashboard/transaksi" class="nav-link">Lihat Transaksi</a>
+    <a href="#/dashboard/admin" class="nav-link">Halaman Admin</a>
+    ${userRoles.includes('pimpinan') ? `<a href="#/dashboard/pimpinan" class="nav-link">Halaman Pimpinan</a>` : ''}
+  `;
+
+  const updateActiveLink = () => {
+    const links = nav.querySelectorAll('.nav-link');
+    links.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === window.location.hash) {
         link.classList.add('active');
-      } else {
-        link.classList.remove('active');
       }
     });
-
-    contentArea.innerHTML = '';
-    switch(subpath) {
-      case 'home':
-        if (isPengunjung) contentArea.appendChild(Dashboard());
-        else window.location.hash = `#/dashboard/${defaultSubpath}`;
-        break;
-      case 'pesan':
-      case 'transaksi':
-        if (isPengunjung) {
-          if (subpath === 'pesan') {
-            const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
-            contentArea.appendChild(Pemesanan(navigateToTransaksi));
-          } else {
-            contentArea.appendChild(Transaksi());
-          }
-        } else {
-          window.location.hash = `#/dashboard/${defaultSubpath}`;
-        }
-        break;
-      case 'admin':
-        if (userRoles.includes('admin')) contentArea.appendChild(AdminPage());
-        else window.location.hash = `#/dashboard/${defaultSubpath}`;
-        break;
-      case 'pimpinan':
-        if (userRoles.includes('pimpinan')) contentArea.appendChild(PimpinanPage());
-        else window.location.hash = `#/dashboard/${defaultSubpath}`;
-        break;
-      default:
-        window.location.hash = `#/dashboard/${defaultSubpath}`;
-        break;
-    }
   };
 
+  const renderSubPage = () => {
+    const subpath = window.location.hash.split('/')[2] || 'admin';
+    contentArea.innerHTML = '';
+
+    // Update link aktif
+    updateActiveLink();
+
+    // Buat div card untuk membungkus halaman
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    switch (subpath) {
+      case 'pesan':
+        const navigateToTransaksi = () => window.location.hash = '#/dashboard/transaksi';
+        card.appendChild(Pemesanan(navigateToTransaksi));
+        break;
+      case 'transaksi':
+        card.appendChild(Transaksi());
+        break;
+      case 'admin':
+        card.appendChild(AdminPage());
+        break;
+      case 'pimpinan':
+        if (userRoles.includes('pimpinan')) {
+          card.appendChild(PimpinanPage());
+        } else {
+          window.location.hash = '#/dashboard/admin';
+        }
+        break;
+      default:
+        window.location.hash = '#/dashboard/admin';
+        return;
+    }
+
+    contentArea.appendChild(card);
+  };
+
+  // Navigasi saat hash berubah
   window.addEventListener('hashchange', renderSubPage);
+
+  // Render awal
   renderSubPage();
-  
+
+  // Logout
   div.querySelector('#logoutBtn').addEventListener('click', () => {
     netlifyIdentity.logout();
   });
