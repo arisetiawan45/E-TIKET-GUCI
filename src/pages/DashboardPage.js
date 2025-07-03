@@ -60,6 +60,7 @@ export default function DashboardPage() {
       .dashboard-nav .nav-links {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap; /* Menambahkan wrap untuk layar kecil */
       }
       .dashboard-nav .nav-link {
         padding: 15px 20px;
@@ -115,16 +116,26 @@ export default function DashboardPage() {
   if (userRoles.includes('pimpinan')) {
     navHTML += `<a href="#/dashboard/pimpinan" class="nav-link">Laporan</a>`;
   }
+  
+  // PENAMBAHAN: Link ke halaman publik untuk semua pengguna yang sudah login
+  navHTML += `<a href="#/tutorial" class="nav-link">Tutorial</a>`;
+  navHTML += `<a href="#/tanya-jawab" class="nav-link">Tanya Jawab</a>`;
+  navHTML += `<a href="#/kontak" class="nav-link">Kontak</a>`;
+
   navLinksContainer.innerHTML = navHTML;
   
   // --- SUB-ROUTER untuk konten di dalam Dashboard ---
   const renderSubPage = () => {
     let defaultSubpath = isPengunjung ? 'home' : (userRoles.includes('admin') ? 'admin' : 'pimpinan');
-    const subpath = window.location.hash.split('/')[2] || defaultSubpath;
+    const path = window.location.hash.split('/');
+    const mainPath = path[1];
+    const subpath = path[2] || defaultSubpath;
     
     // Menandai link navigasi yang aktif
     div.querySelectorAll('.nav-link').forEach(link => {
-      if (link.href.endsWith(subpath)) {
+      // Menyesuaikan logika untuk menandai link aktif
+      const linkPath = new URL(link.href).hash;
+      if (linkPath === `#/${mainPath}/${subpath}` || linkPath === `#/${mainPath}`) {
         link.classList.add('active');
       } else {
         link.classList.remove('active');
