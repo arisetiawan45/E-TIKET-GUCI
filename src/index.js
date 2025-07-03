@@ -1,12 +1,11 @@
+// src/index.js
 import './styles/main.css';
-// Impor semua komponen halaman yang akan menjadi 'rute'
+// Impor komponen halaman utama dan halaman publik
 import WelcomePage from './pages/WelcomePage';
 import DashboardPage from './pages/DashboardPage';
-// Halaman lain yang diimpor berdasarkan permintaan Anda
 import KontakPage from './pages/Kontak';
 import TanyaJawabPage from './pages/TanyaJawab';
 import TutorialPage from './pages/Tutorial';
-
 
 // Menunggu hingga seluruh dokumen HTML selesai dimuat
 window.addEventListener('DOMContentLoaded', () => {
@@ -17,55 +16,55 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // --- Router Utama ---
+  // --- Router Utama (Struktur Diperbarui) ---
   const router = () => {
-    // Logika router tetap sama, sudah benar
     const path = window.location.hash.slice(1) || '/';
-    app.innerHTML = '';
-    const user = netlifyIdentity.currentUser();
+    app.innerHTML = ''; // Kosongkan konten saat ini
 
+    // Langkah 1: Tangani Rute Publik terlebih dahulu.
+    // Rute ini bisa diakses siapa saja, kapan saja, tanpa perlu login.
+    if (path === '/tutorial' || path === '/tanya-jawab' || path === '/kontak') {
+        switch (path) {
+            case '/tutorial':
+                app.appendChild(TutorialPage());
+                break;
+            case '/tanya-jawab':
+                app.appendChild(TanyaJawabPage());
+                break;
+            case '/kontak':
+                app.appendChild(KontakPage());
+                break;
+        }
+        return; // Keluar dari fungsi setelah menampilkan halaman publik.
+    }
+
+    // Langkah 2: Jika bukan rute publik, periksa status login.
+    const user = netlifyIdentity.currentUser();
     if (!user) {
+      // Jika tidak ada pengguna yang login, SELALU tampilkan halaman Welcome.
+      // Ini adalah "gerbang masuk" utama dan halaman default untuk pengguna yang belum login.
       app.appendChild(WelcomePage());
     } else {
-      // Periksa apakah path dimulai dengan /dashboard untuk menangani sub-rute
+      // Jika ada pengguna yang login...
       if (path.startsWith('/dashboard')) {
+        // ...dan path-nya adalah untuk area dasbor, tampilkan DashboardPage.
         app.appendChild(DashboardPage());
-        return; // Hentikan eksekusi agar tidak masuk ke switch
-      }
-
-      switch (path) {
-        case '/':
-          // Jika path hanya '/', arahkan ke dasbor
-          window.location.hash = '#/dashboard';
-          break;
-        
-        // --- RUTE BARU DITAMBAHKAN DI SINI ---
-        case '/kontak':
-          app.appendChild(KontakPage());
-          break;
-        case '/tanya-jawab':
-          app.appendChild(TanyaJawabPage());
-          break;
-        case '/tutorial':
-          app.appendChild(TutorialPage());
-          break;
-
-        default:
-          // Jika rute tidak ditemukan, arahkan kembali ke dasbor
-          window.location.hash = '#/dashboard';
-          break;
+      } else {
+        // ...dan path-nya adalah apa pun selain itu (termasuk '/'),
+        // secara otomatis arahkan mereka ke dasbor.
+        window.location.hash = '#/dashboard';
       }
     }
   };
 
-  // --- PERUBAHAN UTAMA PADA LOGIKA EVENT LISTENER ---
+  // --- Event Listeners untuk mengaktifkan router (DIPERBAIKI) ---
 
-  // 1. Jalankan router SEGERA setelah halaman dimuat.
-  // Ini akan memastikan halaman tidak pernah kosong.
-  // Pada titik ini, 'user' kemungkinan besar null, jadi WelcomePage akan ditampilkan.
+  // 1. Panggil router segera setelah halaman dimuat.
+  // Ini adalah perbaikan kunci untuk mencegah halaman kosong.
+  // Pada titik ini, `user` kemungkinan besar null, sehingga WelcomePage akan ditampilkan dengan benar.
   router();
 
-  // 2. Dengarkan perubahan hash untuk navigasi selanjutnya.
+  // 2. Dengarkan perubahan hash untuk menangani navigasi selanjutnya.
   window.addEventListener('hashchange', router);
   
   // 3. Pasang listener Netlify untuk menangani perubahan status login.
@@ -73,8 +72,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Event 'init' sekarang tugasnya adalah me-render ulang jika pengguna SUDAH login.
     window.netlifyIdentity.on('init', (user) => {
       if (user) {
-        console.log('Pengguna sudah login dari sesi sebelumnya, render ulang.');
-        // Jalankan router lagi untuk beralih ke halaman yang benar berdasarkan hash
+        console.log('Sesi aktif ditemukan, merender ulang...');
         router(); 
       }
     });
