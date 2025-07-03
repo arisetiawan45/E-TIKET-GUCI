@@ -8,6 +8,8 @@ export default function PimpinanPage() {
     <style>
       .pimpinan-stats { display: flex; gap: 40px; margin-bottom: 20px; }
       .pimpinan-stats p { font-size: 1.1em; }
+      .table-header { display: flex; justify-content: space-between; align-items: center; }
+      #printPdfBtn { padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
       #pimpinanTransaksiTable { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
       #pimpinanTransaksiTable th, #pimpinanTransaksiTable td { border: 1px solid #ddd; padding: 10px; text-align: left; }
       #pimpinanTransaksiTable th { background-color: #f2f2f2; }
@@ -26,7 +28,13 @@ export default function PimpinanPage() {
         </div>
 
         <hr>
-        <h3>Riwayat Seluruh Transaksi</h3>
+        
+        <!-- PENAMBAHAN: Header untuk tabel dengan tombol cetak -->
+        <div class="table-header">
+            <h3>Riwayat Seluruh Transaksi</h3>
+            <button id="printPdfBtn">Cetak Halaman Ini (PDF)</button>
+        </div>
+
         <table id="pimpinanTransaksiTable">
           <thead>
             <tr>
@@ -66,12 +74,10 @@ export default function PimpinanPage() {
     const totalPages = Math.ceil(allTransactions.length / rowsPerPage);
     pageIndicator.textContent = `Halaman ${currentPage} dari ${totalPages || 1}`;
 
-    // Tentukan data untuk halaman saat ini
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
     const pageData = allTransactions.slice(startIndex, endIndex);
 
-    // Render baris tabel
     pageData.forEach(trx => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -85,25 +91,35 @@ export default function PimpinanPage() {
       tbody.appendChild(tr);
     });
 
-    // Atur status tombol paginasi
     prevBtn.disabled = currentPage === 1;
     nextBtn.disabled = currentPage >= totalPages;
+  };
+
+  // --- PENAMBAHAN: Fungsi untuk mencetak PDF ---
+  const printPDF = () => {
+    const element = div.querySelector("#pimpinanTransaksiTable");
+    const opt = {
+      margin:       0.5,
+      filename:     `laporan-transaksi-halaman-${currentPage}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    // Panggil library html2pdf untuk membuat dan menyimpan PDF
+    html2pdf().from(element).set(opt).save();
   };
 
   // --- Fungsi API ---
   const fetchData = async () => {
     try {
-      // Pimpinan bisa menggunakan data yang sama dengan admin
       const response = await fetch('/.netlify/functions/get-admin-data');
       if (!response.ok) throw new Error('Gagal mengambil data dari server');
       const data = await response.json();
-
       allTransactions = data.transaksi;
       
       div.querySelector("#totalTransaksi").textContent = allTransactions.length;
       div.querySelector("#totalTiket").textContent = allTransactions.reduce((sum, trx) => sum + (trx.jumlah || 0), 0);
       
-      // Render halaman pertama
       renderPage();
 
       div.querySelector("#loading-message").style.display = 'none';
@@ -113,8 +129,8 @@ export default function PimpinanPage() {
     }
   };
 
-  // --- Event Listeners untuk Paginasi ---
-  const setupPagination = () => {
+  // --- Event Listeners untuk Paginasi dan Cetak ---
+  const setupEventListeners = () => {
     div.querySelector("#prevPageBtn").addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage--;
@@ -129,11 +145,14 @@ export default function PimpinanPage() {
             renderPage();
         }
     });
+
+    // PENAMBAHAN: Event listener untuk tombol cetak
+    div.querySelector("#printPdfBtn").addEventListener('click', printPDF);
   };
 
   // --- Inisialisasi ---
   fetchData();
-  setupPagination();
+  setupEventListeners();
 
   return div;
 }
