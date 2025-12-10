@@ -25,6 +25,7 @@
     "webpack-dev-server": "^5.0.4"
   },
   "dependencies": {
+    "midtrans-client": "^1.4.3",
     "postgres": "^3.4.7",
     "resend": "^4.6.0"
   }
